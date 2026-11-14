@@ -31,3 +31,5 @@ runtime/
 health_snapshot.json
 *.spec
 *.exe
+
+!packaging/HAL2030.spec

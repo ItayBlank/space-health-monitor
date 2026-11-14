@@ -12,7 +12,7 @@ import math
 from pathlib import Path
 from uuid import uuid4
 
-from .config import ROOT
+from .paths import runtime_root
 from .models import Alert, Sample
 
 
@@ -43,7 +43,7 @@ def _snapshot(frame: dict[str, Sample], alerts: list[Alert], mission_time: float
 
 class DownlinkService:
     def __init__(self, output_dir: str | Path | None = None):
-        self.output_dir = Path(output_dir) if output_dir is not None else ROOT / "runtime" / "downlink"
+        self.output_dir = Path(output_dir) if output_dir is not None else runtime_root() / "downlink"
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.connected = True
         self.auto_send = False

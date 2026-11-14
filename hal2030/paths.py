@@ -1,0 +1,17 @@
+"""Separate bundled resources from durable, per-user runtime files."""
+import os
+from pathlib import Path
+import sys
+
+
+def runtime_root() -> Path:
+    """Return the writable runtime location; callers create it or surface I/O errors.
+
+    Source runs keep repository-local runtime data. Frozen Windows builds use
+    LocalAppData so one-file extraction cleanup cannot erase the outbox.
+    """
+    if not getattr(sys, "frozen", False):
+        return Path(__file__).resolve().parent.parent / "runtime"
+    local = os.environ.get("LOCALAPPDATA")
+    base = Path(local) if local else Path.home() / "AppData" / "Local"
+    return base / "HAL2030" / "runtime"

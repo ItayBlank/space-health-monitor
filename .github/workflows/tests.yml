@@ -1,6 +1,14 @@
-name: Core tests
+name: Test and build
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -17,5 +25,43 @@ jobs:
         with:
           python-version: '3.13'
           cache: pip
+          cache-dependency-path: requirements*.txt
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q
+
+  windows-executable:
+    needs: test
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: x64
+          cache: pip
+          cache-dependency-path: requirements*.txt
+      - run: python -m pip install -r requirements-build.txt
+      - name: Build standalone executable
+        run: python -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
+      - name: Smoke-test packaged app
+        run: python tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAL2030-windows-x64-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_number) }}-${{ github.sha }}
+          path: |
+            dist/HAL2030.exe
+            LICENSE
+            packaging/README.txt
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+      - name: Upload smoke-test screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HAL2030-smoke-${{ github.sha }}
+          path: build/smoke/
+          if-no-files-found: ignore
+          retention-days: 7

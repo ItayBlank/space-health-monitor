@@ -6,6 +6,31 @@ HAL2030 combines a live crew overview, individual telemetry, a sensor registry, 
 
 **Everything in the application is in English.** The supplied recording, people, events, and physiological signals are synthetic. After installing its dependencies, the application runs locally without an internet connection.
 
+## Download the Windows executable
+
+Open this repository's **Actions → Test and build**, select a successful run,
+and download the **HAL2030-windows-x64-<commit>** artifact. Extract the ZIP and
+launch `dist/HAL2030.exe`. GitHub requires sign-in to download workflow artifacts.
+No Python installation is needed. Artifacts are retained for 14 days; builds run
+on pushes and pull requests and can also be started with **Run workflow**.
+
+The executable bundles the synthetic recording and portraits. It is unsigned,
+and the first launch takes a few seconds to extract its dependencies. Packaged
+runs preserve their outbox in `%LOCALAPPDATA%\HAL2030\runtime\downlink`;
+`--runtime-dir` overrides that location. Source runs keep `runtime/downlink/`.
+
+To build locally on Windows using the development environment below:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
+.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+```
+
+CI runs the core tests before packaging and launches all five packaged pages
+offscreen from a separate working directory. This is a startup/resource-loading
+check, not a complete interactive Windows test.
+
 ## Quick start on Windows / VS Code
 
 1. Clone this repository and open `space-health-monitor` in VS Code; this folder contains `main.py`.
@@ -201,3 +226,31 @@ Claim a feature in the [issue tracker](../../issues) before starting. Work on on
 ## Data and license
 
 The [MIT License](LICENSE) covers this project's code and documentation. Linked datasets retain their original terms. The demo uses public source data where available and labels simulated crew records.
+
+## CI maintenance contract
+
+Every pull request (including drafts and fork PRs) runs the same tests and Windows
+build against GitHub's proposed merge with `main`. Pushes to `main` build the merged
+app. Manual runs are available. New pushes to a PR cancel its outdated run; feature
+branch pushes do not duplicate the PR build. Existing PRs created before a CI change
+may need their branch updated from `main` to adopt it.
+
+CI installs the checked-out requirements, discovers tests with pytest, and asks the
+packaged app to smoke-test every current navigation page. No page count, crew name,
+or telemetry filename is hard-coded in the workflow or smoke runner. The build
+includes all tracked files under `assets/` and `data/`, plus non-Python package
+resources under `hal2030/`. Untracked downloads, runtime output and virtual
+environments are excluded. Commit only distributable resources in those locations.
+
+For ordinary features, add runtime dependencies to `requirements.txt` (or included
+requirements files), put resources in those directories, and add behavioral tests.
+Application submodules are collected even when imported dynamically. New dialogs
+and hardware integrations still need feature-specific tests; navigation screenshots
+do not exercise every interaction. Native dependencies, unusual dynamic imports,
+external model downloads or additional distribution formats may need packaging
+hooks or CI changes. An arbitrary future feature cannot be guaranteed to package
+without any maintenance.
+
+PR executable artifacts include the PR number and tested commit SHA. Smoke artifacts
+include `manifest.json`, which lists the captured pages, alongside screenshots.
+The existing read-only Actions permissions and secret-free build also apply to forks.
