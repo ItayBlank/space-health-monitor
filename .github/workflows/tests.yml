@@ -1,6 +1,14 @@
 name: Test and build
 
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -17,6 +25,7 @@ jobs:
         with:
           python-version: '3.13'
           cache: pip
+          cache-dependency-path: requirements*.txt
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m pytest -q
 
@@ -31,9 +40,7 @@ jobs:
           python-version: '3.13'
           architecture: x64
           cache: pip
-          cache-dependency-path: |
-            requirements.txt
-            requirements-build.txt
+          cache-dependency-path: requirements*.txt
       - run: python -m pip install -r requirements-build.txt
       - name: Build standalone executable
         run: python -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
@@ -42,7 +49,7 @@ jobs:
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
         with:
-          name: HAL2030-windows-x64-${{ github.sha }}
+          name: HAL2030-windows-x64-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_number) }}-${{ github.sha }}
           path: |
             dist/HAL2030.exe
             LICENSE
@@ -55,6 +62,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: HAL2030-smoke-${{ github.sha }}
-          path: build/smoke/*.png
+          path: build/smoke/
           if-no-files-found: ignore
           retention-days: 7
