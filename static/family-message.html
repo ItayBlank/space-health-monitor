@@ -10,60 +10,61 @@
   <main>
     <a href="/">← ASTRA-Core</a>
     <h1>Family message</h1>
-    <p>Two messages from Maya, a fictional character. The voice, portrait, and reference clips are synthetic.</p>
+    <p>A simulated Earth–Mars link using acted speech from the CREMA-D research dataset. Compare each recording with its calibrated LivePortrait reconstruction and a low-bitrate video encode.</p>
     <section class="preload">
-      <img src="/static/family-media/portrait.png" width="256" height="256" alt="Maya’s shared illustrated portrait">
+      <img src="/static/family-media/portrait.png" width="256" height="256" alt="Shared portrait of CREMA-D actor 1001">
       <div>
         <h2>One portrait, loaded once</h2>
-        <p>The Mars receiver reuses this <a href="/static/family-media/portrait.png" download>17,721-byte portrait</a> for both messages. The offline LivePortrait receiver also needs model weights installed once (522 MB).</p>
+        <p>The receiver uses the same <a href="/static/family-media/portrait.png" download>68,776-byte portrait</a> for both messages. It also needs the LivePortrait model weights installed once (522 MB).</p>
       </div>
     </section>
     <h2 class="link-heading">Simulated Earth–Mars link</h2>
-    <p>Only the audio and motion ZIP is sent. The Mars videos below preview offline renders from those ZIPs. The low-bitrate video uses the same crop, frame rate, and compressed speech as the ZIP, with H.264 video targeted at 64 kbps.</p>
+    <p>Each transmission carries a ZIP with audio and facial motion. The Mars videos show offline renders from those ZIPs. The H.264 comparison targets 64 kbps and uses the same crop, frame rate, and compressed speech as its ZIP.</p>
 
-    <section class="message" aria-labelledby="dinner">
-      <h2 id="dinner">Dinner is ready</h2>
-      <p>“Dinner is ready. We saved you a seat.”</p>
+    <section class="message" aria-labelledby="jacket">
+      <h2 id="jacket">Single take · 1.3 seconds</h2>
+      <p>“Don’t forget a jacket.”</p>
       <div class="panels">
         <figure>
-          <figcaption>Earth · Reference video</figcaption>
-          <video src="/static/family-media/one-reference.mp4" controls playsinline preload="none" aria-label="Dinner reference video"></video>
-          <p><strong>56,363 bytes</strong></p>
+          <figcaption>Earth · Original recording</figcaption>
+          <video src="/static/family-media/one-reference.mp4" controls playsinline preload="none" aria-label="Single-take original recording"></video>
+          <p><strong>102,603 bytes</strong></p>
         </figure>
         <figure>
           <figcaption>Earth · Low-bitrate video</figcaption>
-          <video src="/static/family-media/one-baseline.mp4" controls playsinline preload="none" aria-label="Dinner low-bitrate video"></video>
-          <p><strong>22,410 bytes</strong></p>
+          <video src="/static/family-media/one-baseline.mp4" controls playsinline preload="none" aria-label="Single-take low-bitrate video"></video>
+          <p><strong>14,089 bytes</strong></p>
         </figure>
         <figure>
-          <figcaption>Mars · Original audio · Reconstructed portrait</figcaption>
-          <video src="/static/family-media/one-reconstruction.mp4" controls playsinline preload="none" aria-label="Dinner reconstructed portrait"></video>
-          <p><a href="/static/family-media/one.zip" download>Download message ZIP</a> · <strong>11,188 bytes</strong> · 50.1% smaller than low-bitrate video</p>
+          <figcaption>Mars · Original audio · Calibrated reconstruction</figcaption>
+          <video src="/static/family-media/one-reconstruction.mp4" controls playsinline preload="none" aria-label="Single-take calibrated reconstruction"></video>
+          <p><a href="/static/family-media/one.zip" download>Download message ZIP</a> · <strong>11,821 bytes</strong> · 16.1% smaller than low-bitrate video</p>
         </figure>
       </div>
     </section>
 
-    <section class="message" aria-labelledby="basil">
-      <h2 id="basil">The basil bloomed</h2>
-      <p>“The basil bloomed. See you soon.”</p>
+    <section class="message" aria-labelledby="reel">
+      <h2 id="reel">Three-take reel · 4.4 seconds</h2>
+      <p>“Maybe tomorrow it will be cold. Don’t forget a jacket. I’m on my way to the meeting.”</p>
       <div class="panels">
         <figure>
-          <figcaption>Earth · Reference video</figcaption>
-          <video src="/static/family-media/two-reference.mp4" controls playsinline preload="none" aria-label="Basil reference video"></video>
-          <p><strong>53,309 bytes</strong></p>
+          <figcaption>Earth · Recorded takes, edited together</figcaption>
+          <video src="/static/family-media/two-reference.mp4" controls playsinline preload="none" aria-label="Three-take edited original recording"></video>
+          <p><strong>309,577 bytes</strong></p>
         </figure>
         <figure>
           <figcaption>Earth · Low-bitrate video</figcaption>
-          <video src="/static/family-media/two-baseline.mp4" controls playsinline preload="none" aria-label="Basil low-bitrate video"></video>
-          <p><strong>20,899 bytes</strong></p>
+          <video src="/static/family-media/two-baseline.mp4" controls playsinline preload="none" aria-label="Three-take low-bitrate video"></video>
+          <p><strong>48,437 bytes</strong></p>
         </figure>
         <figure>
-          <figcaption>Mars · Original audio · Reconstructed portrait</figcaption>
-          <video src="/static/family-media/two-reconstruction.mp4" controls playsinline preload="none" aria-label="Basil reconstructed portrait"></video>
-          <p><a href="/static/family-media/two.zip" download>Download message ZIP</a> · <strong>10,293 bytes</strong> · 50.7% smaller than low-bitrate video</p>
+          <figcaption>Mars · Original audio · Calibrated reconstruction</figcaption>
+          <video src="/static/family-media/two-reconstruction.mp4" controls playsinline preload="none" aria-label="Three-take calibrated reconstruction"></video>
+          <p><a href="/static/family-media/two.zip" download>Download message ZIP</a> · <strong>32,950 bytes</strong> · 32.0% smaller than low-bitrate video</p>
         </figure>
       </div>
     </section>
+    <p>Contains footage and audio from <a href="https://github.com/CheyneyComputerScience/CREMA-D">CREMA-D</a> by Cao et al., actor 1001. CREMA-D is available under the <a href="https://opendatacommons.org/licenses/odbl/1-0/">Open Database License 1.0</a> and its individual recordings under the <a href="https://opendatacommons.org/licenses/dbcl/1-0/">Database Contents License 1.0</a>. The examples were trimmed, cropped, joined where indicated, and reconstructed.</p>
   </main>
 </body>
 </html>

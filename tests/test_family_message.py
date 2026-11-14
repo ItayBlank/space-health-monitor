@@ -11,7 +11,7 @@ ASSETS = ROOT / "static" / "family-media"
 
 def test_shipped_family_messages():
     registry = json.loads((ROOT / "data" / "sources.json").read_text(encoding="utf-8"))
-    source = next(record for record in registry["sources"] if record["id"] == "astra.family-message.synthetic.v2")
+    source = next(record for record in registry["sources"] if record["id"] == "astra.family-message.crema-d.v1")
     page = (ROOT / "static" / "family-message.html").read_text(encoding="utf-8")
     assert sorted(record["path"] for record in source["files"]) == [
         path.relative_to(ROOT).as_posix() for path in sorted(ASSETS.iterdir())
@@ -21,7 +21,7 @@ def test_shipped_family_messages():
         assert f'"/{record["path"]}"' in page
 
     assert f"{(ASSETS / 'portrait.png').stat().st_size:,}-byte portrait" in page
-    for name in ("one", "two"):
+    for name, fps, frames in (("one", 20, 26), ("two", 15, 66)):
         message = ASSETS / f"{name}.zip"
         baseline_size = (ASSETS / f"{name}-baseline.mp4").stat().st_size
         message_size = message.stat().st_size
@@ -33,6 +33,6 @@ def test_shipped_family_messages():
             assert sorted(payload.namelist()) == ["audio.ogg", "message.json", "motion.npy"]
             assert payload.testzip() is None
             metadata = json.loads(payload.read("message.json"))
-            assert metadata["version"] == 1 and metadata["fps"] == 5 and metadata["frames"] > 1
+            assert metadata == {"version": 1, "fps": fps, "frames": frames}
             assert payload.read("audio.ogg").startswith(b"OggS")
             assert payload.read("motion.npy").startswith(b"\x93NUMPY")

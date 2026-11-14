@@ -38,9 +38,9 @@ participant responses and EEG recordings are not shipped.
 It is not sourced from OpenNeuro. See [source registry](data/sources.json) and
 [provenance policy and dataset assessment](docs/DATA_PROVENANCE.md).
 
-The family-message demo media under `static/family-media/` are synthetic
-project assets. The fictional narration uses Windows speech synthesis.
-See the [demo guide](docs/FAMILY_MESSAGE_DEMO.md) for generation details.
+## CREMA-D family-message examples
+
+The family-message examples contain footage and audio from [CREMA-D](https://github.com/CheyneyComputerScience/CREMA-D) by Houwei Cao, David G. Cooper, Michael K. Keutmann, Ruben C. Gur, Ani Nenkova, and Ragini Verma. The database is available under the [Open Database License 1.0](https://opendatacommons.org/licenses/odbl/1-0/) and the individual recordings under the [Database Contents License 1.0](https://opendatacommons.org/licenses/dbcl/1-0/). We trimmed and cropped extracts from actor 1001, joined takes for the longer reel, and reconstructed the actor's own speech and expression from a separately preloaded still. See the [source registry](data/sources.json) and [demo guide](docs/FAMILY_MESSAGE_DEMO.md) for file attribution and processing details.
 
 ## Optional LivePortrait benchmark
 

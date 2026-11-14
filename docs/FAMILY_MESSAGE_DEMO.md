@@ -1,8 +1,8 @@
 # Family message demo
 
-Run `python -m uvicorn server:app --host 127.0.0.1 --port 8000` and open `http://127.0.0.1:8000`. Go to **HAL → Family Archive → Family message demo**. For each fictional message, play the Earth reference, the low-bitrate video, and the preview rendered on the receiver. Download either message ZIP and the shared portrait from the page to repeat the reconstruction locally.
+Run `python -m uvicorn server:app --host 127.0.0.1 --port 8000` and open `http://127.0.0.1:8000`. Go to **HAL → Family Archive → Family message demo**. The page shows a 1.3-second take and a 4.4-second reel edited from three takes by the same CREMA-D actor. Each row includes the original recording, a low-bitrate encode, and the calibrated reconstruction.
 
-The browser displays pre-rendered clips. The actual offline sender and receiver are the `pack` and `render` commands below. The simulated Earth–Mars link carries only a ZIP with `message.json` (version, frame rate, frame count), `motion.npy` (76 float32 values per frame), and `audio.ogg` (mono Opus at a 24 kbps target). The receiver uses the same fixed portrait for both ZIPs. It performs LivePortrait inference locally and writes an MP4 with the supplied speech and motion on one timeline. It requires no source clip. Its dependencies and model weights are installed once.
+Each transmitted ZIP contains `message.json` (version, frame rate, frame count), `motion.npy` (76 float32 values per frame), and `audio.ogg` (mono Opus at a 24 kbps target). The browser plays previews. The offline CLI renders each ZIP using the same preloaded portrait, with speech and motion on one timeline.
 
 ## Offline CLI
 
@@ -31,44 +31,52 @@ foreach ($file in $files) {
 }
 ```
 
-After setup, the following commands run offline. Use either shipped ZIP or encode both from the synthetic references:
+After installing the runtime, render either shipped ZIP offline:
 
 ```powershell
 $python = '.\runtime\family-message\.venv\Scripts\python.exe'
-$tool = 'tools/family_liveportrait.py'
+$model = 'runtime/family-message/LivePortrait'
 $demo = 'static/family-media'
 foreach ($name in 'one','two') {
-  & $python $tool --liveportrait runtime/family-message/LivePortrait pack "$demo/$name-reference.mp4" "runtime/family-message/$name.zip" --fps 5 --crop 320:320:160:55 --baseline "runtime/family-message/$name-baseline.mp4"
-  if ($LASTEXITCODE -ne 0) { throw "Packing failed for $name" }
-}
-```
-
-Put only the ZIPs and `portrait.png` in a receiver input folder. The receiver also needs the script, the preinstalled runtime, and the model. Run the receiver twice with the same portrait:
-
-```powershell
-New-Item -ItemType Directory -Force runtime/family-message/receiver-input | Out-Null
-Copy-Item "$demo/one.zip","$demo/two.zip","$demo/portrait.png" runtime/family-message/receiver-input
-foreach ($name in 'one','two') {
-  & $python $tool --liveportrait runtime/family-message/LivePortrait render "runtime/family-message/receiver-input/$name.zip" runtime/family-message/receiver-input/portrait.png "runtime/family-message/$name-rendered.mp4"
+  & $python tools/family_liveportrait.py --liveportrait $model render "$demo/$name.zip" "$demo/portrait.png" "runtime/family-message/$name-rendered.mp4"
   if ($LASTEXITCODE -ne 0) { throw "Rendering failed for $name" }
 }
 ```
 
-To test messages you packed, replace the two shipped ZIPs in the receiver input folder with your generated ZIPs.
+To regenerate the payloads, first extract an eyes-open, closed-mouth calibration image from the untrimmed source. This frame comes from the original recording session and is distinct from the portrait. The sender uses it before computing motion. The receiver needs only the ZIP, portrait, and preinstalled runtime.
 
-For a new clip, use a tightly framed, front-facing subject with a neutral pose in the first frame. The sender uses the first frame to normalize the motion it extracts. The decoder supports clips up to 30 seconds.
+```powershell
+$assets = 'runtime/family-message'
+$revision = '1658cd342dff90010aa843eaeebd53610a08b1dc'
+$source = '1001_DFA_NEU_XX.flv'
+curl.exe -fL "https://media.githubusercontent.com/media/CheyneyComputerScience/CREMA-D/$revision/VideoFlash/$source" -o "$assets/$source"
+if ($LASTEXITCODE -ne 0) { throw 'Could not download the calibration take' }
+ffmpeg -y -i "$assets/$source" -vf 'crop=242:242:86:16,scale=256:256' -frames:v 1 "$assets/neutral.png"
+if ($LASTEXITCODE -ne 0) { throw 'Could not extract the calibration image' }
+$fps = @{ one = 20; two = 15 }
+foreach ($name in 'one','two') {
+  & $python tools/family_liveportrait.py --liveportrait $model pack "$demo/$name-reference.mp4" "$assets/$name.zip" --fps $fps[$name] --crop 242:242:86:16 --calibration-image "$assets/neutral.png" --baseline "$assets/$name-baseline.mp4"
+  if ($LASTEXITCODE -ne 0) { throw "Packing failed for $name" }
+}
+```
+
+For new footage, choose a tightly framed, front-facing subject with a relaxed, eyes-open expression before speech. Select that frame explicitly when the clip starts mid-blink or mid-speech. With no calibration image, the CLI uses the first decoded frame. Messages can be up to 30 seconds long.
 
 ## Measured payloads
 
-| Message | Duration | Reference MP4 | Low-bitrate MP4 | Message ZIP | Reduction vs. low-bitrate |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| Dinner is ready | 3.0 s | 56,363 B | 22,410 B | 11,188 B | 50.1% |
-| The basil bloomed | 2.8 s | 53,309 B | 20,899 B | 10,293 B | 50.7% |
+| Example | Render duration | Frame rate | Reference MP4 | Low-bitrate MP4 | Message ZIP | Reduction vs. low-bitrate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Single take | 1.3 s | 20 fps | 102,603 B | 14,089 B | 11,821 B | 16.1% |
+| Edited reel | 4.4 s | 15 fps | 309,577 B | 48,437 B | 32,950 B | 32.0% |
 
-These are complete file sizes. The 256 × 256 H.264 baseline uses the same crop and 5 fps timeline used for motion extraction. Video targets 64 kbps with a 64 kbps cap. The sender copies the same Opus stream into the baseline. The 512 × 512 reconstruction uses LivePortrait’s native output and muxes AAC encoded from the received Opus. The portrait (17,721 B) and five checkpoints (522,320,239 B) are one-time inputs. Against the baseline, the two messages save 21,828 B in total. Including just the shared portrait, the saving is 4,107 B. With the model already installed, the portrait cost is recovered by the second message on these examples.
+These are complete file sizes. Within each row the 256 × 256 H.264 baseline uses the same crop, frame rate, and Opus packets as the corresponding ZIP. H.264 targets and is capped at 64 kbps. The 512 × 512 reconstruction uses LivePortrait’s native output and muxes AAC encoded from the received speech.
 
-This measures transfer size for two short, low-motion synthetic clips. Visual fidelity differs between the baseline and reconstruction. Rendering and encoding took about two minutes per clip on an Intel Core i5-1135G7 with four PyTorch threads, after checkpoint load. Playback uses the resulting video file. These clips do not establish real-time performance or spacecraft compute requirements.
+The shared portrait is 68,776 B and the five checkpoints total 522,320,239 B. These are one-time inputs and excluded from the per-message reduction. The portrait costs more than the combined savings on these two messages. The clips contain acted speech with a fixed camera and background. Visual fidelity differs, and CPU rendering happens before playback. The 4.4-second reel took 579 seconds to render and encode on the test Intel Core i5-1135G7 with four PyTorch threads, after model load.
 
-## Synthetic asset provenance
+## Asset provenance
 
-The two exact spoken lines are “Dinner is ready. We saved you a seat.” and “The basil bloomed. See you soon.” Both WAV sources were generated with Windows `System.Speech` at rate 2, 24 kHz 16-bit PCM mono. Run `tools/build_family_demo.py` with each WAV and a separate scratch output directory to generate the illustrated Earth reference, then run `pack` above. The shared portrait is the first frame of the first synthetic reference, cropped with `crop=320:320:160:55,scale=256:256`. The second reference is used only by its sender. Exact output bytes can vary by installed voice and encoders.
+Contains recordings from [CREMA-D by Cao et al.](https://github.com/CheyneyComputerScience/CREMA-D) at Git revision `1658cd342dff90010aa843eaeebd53610a08b1dc`. The authors release the database under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) and individual recordings under [DbCL 1.0](https://opendatacommons.org/licenses/dbcl/1-0/). Both examples preserve the actor’s original spoken audio. See [the source registry](../data/sources.json) for input and output hashes.
+
+- The shared portrait is the first frame of `1001_IEO_NEU_XX.flv`, cropped with `crop=242:242:86:16,scale=256:256`. The sender calibrates from the same crop of the first frame of `1001_DFA_NEU_XX.flv`.
+- The single take trims `1001_DFA_NEU_XX.flv` to 0.24–1.54 seconds and encodes it as H.264/AAC before motion extraction.
+- The reel joins `1001_MTI_NEU_XX.flv` (0.20–1.90 s), `1001_DFA_NEU_XX.flv` (0.24–1.54 s), and `1001_IOM_NEU_XX.flv` (0.49–1.79 s) with straight cuts and no changes to the spoken words. The edited reference is H.264/AAC at 20 fps and its payload and baseline use 15 fps.

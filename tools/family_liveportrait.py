@@ -45,7 +45,7 @@ def load_runtime(checkout):
 
 
 def pack(args, runtime):
-    _, np, torch, model, rotation = runtime
+    cv2, np, torch, model, rotation = runtime
     crop = f"crop={args.crop}," if args.crop else ""
     video_filter = f"{crop}fps={args.fps},scale=256:256:force_original_aspect_ratio=increase,crop=256:256"
     raw = ffmpeg(args.ffmpeg, *local_input(args.clip), "-an", "-vf", video_filter,
@@ -56,11 +56,20 @@ def pack(args, runtime):
         raise ValueError("Use a clip with video of at most 30 seconds")
     motion = []
     start = time.perf_counter()
-    for frame in frames:
-        pose = model.get_kp_info(model.prepare_source(frame))
-        matrix = rotation(pose["pitch"], pose["yaw"], pose["roll"])
-        if not motion:
-            first, first_matrix = pose, matrix
+    calibration = frames[0]
+    if args.calibration_image:
+        image = cv2.imread(str(args.calibration_image))
+        if image is None or image.shape[:2] != (256, 256):
+            raise ValueError("The calibration image must be a readable 256 × 256 crop")
+        calibration = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    first = model.get_kp_info(model.prepare_source(calibration))
+    first_matrix = rotation(first["pitch"], first["yaw"], first["roll"])
+    for index, frame in enumerate(frames):
+        if index == 0 and not args.calibration_image:
+            pose, matrix = first, first_matrix
+        else:
+            pose = model.get_kp_info(model.prepare_source(frame))
+            matrix = rotation(pose["pitch"], pose["yaw"], pose["roll"])
         relative = (matrix @ first_matrix.transpose(1, 2), pose["exp"] - first["exp"],
                     pose["t"] - first["t"], pose["scale"] / first["scale"])
         motion.append(torch.cat([item.flatten() for item in relative]).numpy())
@@ -159,6 +168,7 @@ def main():
     sender.add_argument("output", type=Path)
     sender.add_argument("--fps", type=int, choices=range(1, 31), default=15, metavar="1–30")
     sender.add_argument("--crop", help="FFmpeg crop as width:height:x:y")
+    sender.add_argument("--calibration-image", type=Path, help="Neutral 256 × 256 crop from the driving take")
     sender.add_argument("--baseline", type=Path)
     receiver = commands.add_parser("render")
     receiver.add_argument("message", type=Path)
@@ -170,6 +180,8 @@ def main():
     if getattr(args, "crop", None) and not re.fullmatch(r"\d+:\d+:\d+:\d+", args.crop):
         parser.error("--crop requires width:height:x:y in pixels")
     inputs = ("clip",) if args.command == "pack" else ("message", "portrait")
+    if getattr(args, "calibration_image", None):
+        inputs += ("calibration_image",)
     for name in inputs:
         path = getattr(args, name).resolve()
         if not path.is_file():

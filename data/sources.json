@@ -92,68 +92,96 @@
       ]
     },
     {
-      "id": "astra.family-message.synthetic.v2",
-      "title": "ASTRA-Core fictional family messages and LivePortrait benchmark",
-      "kind": "synthetic",
+      "id": "astra.family-message.crema-d.v1",
+      "title": "CREMA-D actor 1001 excerpts and LivePortrait benchmark",
+      "kind": "dataset",
       "status": "shipped",
-      "version": "2",
-      "license": "MIT",
+      "version": "1658cd342dff90010aa843eaeebd53610a08b1dc",
+      "license": "ODbL-1.0 (dataset); DbCL-1.0 (recordings)",
       "authors": [
-        "ASTRA-Core project contributors"
+        "Houwei Cao",
+        "David G. Cooper",
+        "Michael K. Keutmann",
+        "Ruben C. Gur",
+        "Ani Nenkova",
+        "Ragini Verma"
+      ],
+      "source": "https://github.com/CheyneyComputerScience/CREMA-D",
+      "publication_doi": "10.1109/TAFFC.2014.2336244",
+      "source_files": [
+        {
+          "path": "VideoFlash/1001_DFA_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_DFA_NEU_XX.flv",
+          "sha256": "a2b374bcd195d7320437c944eef2208dedd2c22725d09d65e8c31bf6c1eeb286"
+        },
+        {
+          "path": "VideoFlash/1001_IEO_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_IEO_NEU_XX.flv",
+          "sha256": "88205410d8753bded1885603c1e9c660937818d41be69a222a424fc538c0879b"
+        },
+        {
+          "path": "VideoFlash/1001_IOM_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_IOM_NEU_XX.flv",
+          "sha256": "0fc445a34a17a9a3ac103562833d511046aa28762594ef95813b94344e7d3583"
+        },
+        {
+          "path": "VideoFlash/1001_MTI_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_MTI_NEU_XX.flv",
+          "sha256": "52e470b8028a6ac0cbfe6da9ff7690784a116511ffaacc9fb76a7a0bbec43885"
+        }
       ],
       "files": [
         {
           "path": "static/family-media/one-baseline.mp4",
-          "sha256": "af11750d4f5f75d2083356ec259dc465919c7658f5074c0f2f759143ab52847f"
+          "sha256": "8b4340cfcafceabcca6bb994531f95a977266ae3ab22fa9526c32a59aadbe15a"
         },
         {
           "path": "static/family-media/one-reconstruction.mp4",
-          "sha256": "ea302d7be9eec67fa4b9aa26eee56c82f4e891012cbeeadbe1624e2358dedfd8"
+          "sha256": "197540bb7393cd3bd732f176437ebb75f1cbdb5c031882c4f1d3589053e5d5ef"
         },
         {
           "path": "static/family-media/one-reference.mp4",
-          "sha256": "655a9677b839dc74ba330eb244ae77adec603d7423b6b0d461d4635b5b6ab512"
+          "sha256": "36d2a6734fb5c4d41dd962925353934a3dc6335f25d157b74fb7512f74fcbcaf"
         },
         {
           "path": "static/family-media/one.zip",
-          "sha256": "d70b2a8719c55b203a31ca34f1e3bc41fd17a9e12d9db98bb1727ad83a95c3ba"
+          "sha256": "1a21a62bfc78a168f8edd78bedb0faf0847f5e41030ba9081f986e1f41029996"
         },
         {
           "path": "static/family-media/portrait.png",
-          "sha256": "5c8e9838e649105c54f1b71d226c99df2373c94d8e1362375048d4ab75bd0ebf"
+          "sha256": "7ead5a45cc35e62f430330cdea260d043091abca9068e0ade51c3cf3a51127e3"
         },
         {
           "path": "static/family-media/two-baseline.mp4",
-          "sha256": "75a36283b538c11b5eb469af8ea404d13aef0f517d7a07180955b6fa141996ce"
+          "sha256": "809950c9842c7def27945138de0425dcfce1bd577a6658eb497cc6d0c80e3739"
         },
         {
           "path": "static/family-media/two-reconstruction.mp4",
-          "sha256": "03eed009a206527726dfd415586551acc8e52c47ce61ca91f4b432d4a00422ae"
+          "sha256": "9da30d1eb8cd5ab968af0667ccf844e8d86e181941f3b4015d6766e8f951bf83"
         },
         {
           "path": "static/family-media/two-reference.mp4",
-          "sha256": "2034ed41135e5ea4a89ce7e8677568f769ccd933d625edb3af52858a820a6d42"
+          "sha256": "c7ef969deeee11bcf3cbe01c0f057e778f5c488110ed5cf45fabecc6d0d38f08"
         },
         {
           "path": "static/family-media/two.zip",
-          "sha256": "aa6f0c30b53c840ca6a4cce9fa0ac1d8f891ce35df40836213027ef59cd2bf86"
+          "sha256": "43de0f3f91f0b4c23af841c0fdffc21c674da8054628c5ea563b06f780a5bf09"
         }
       ],
       "generation": {
-        "entry_point": "tools/build_family_demo.py",
-        "voice": "Windows System.Speech synthesized narration",
-        "benchmark": "tools/family_liveportrait.py",
+        "entry_point": "tools/family_liveportrait.py",
+        "method": "docs/FAMILY_MESSAGE_DEMO.md",
         "liveportrait_revision": "9b294b3d0536135442ea73cb01e6cb3ca7029dd3",
         "upstream_model": "https://huggingface.co/KlingTeam/LivePortrait"
       },
       "transformations": [
-        "Generate two illustrated H.264/AAC reference clips from synthetic narration.",
-        "Extract Opus audio and relative facial motion on the sender. Generate a low-bitrate H.264 comparison with the same Opus speech.",
-        "Render both ZIPs on the CPU receiver using the same separately preloaded illustrated portrait."
+        "Crop a still portrait from take IEO and a separate neutral calibration image from untrimmed take DFA.",
+        "Trim take DFA for the short reference and edit takes MTI, DFA, and IOM in order for the longer reference.",
+        "Extract Opus speech and calibrated relative facial motion. Render offline using the shared portrait."
       ],
       "limitations": [
-        "Fictional speaker and procedural portrait. Size comparison describes two short, low-motion examples.",
-        "Upstream models are installed separately. The app ships previews and payloads."
+        "Acted research recordings from one actor with a fixed camera and background. The reel joins different takes.",
+        "The app ships previews and payloads. Model weights are installed separately."
       ]
     }
   ]
