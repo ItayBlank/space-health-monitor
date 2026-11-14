@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family Message · ASTRA-Core</title>
+  <link rel="stylesheet" href="/static/family-message.css">
+</head>
+<body>
+  <main>
+    <a href="/">← ASTRA-Core</a>
+    <h1>Family message</h1>
+    <p>Two messages from Maya, a fictional character. The voice, portrait, and reference clips are synthetic.</p>
+    <section class="preload">
+      <img src="/static/family-media/portrait.png" width="256" height="256" alt="Maya’s shared illustrated portrait">
+      <div>
+        <h2>One portrait, loaded once</h2>
+        <p>The Mars receiver reuses this <a href="/static/family-media/portrait.png" download>17,721-byte portrait</a> for both messages. The offline LivePortrait receiver also needs model weights installed once (522 MB).</p>
+      </div>
+    </section>
+    <h2 class="link-heading">Simulated Earth–Mars link</h2>
+    <p>Only the audio and motion ZIP is sent. The Mars videos below preview offline renders from those ZIPs. The low-bitrate video uses the same crop, frame rate, and compressed speech as the ZIP, with H.264 video targeted at 64 kbps.</p>
+
+    <section class="message" aria-labelledby="dinner">
+      <h2 id="dinner">Dinner is ready</h2>
+      <p>“Dinner is ready. We saved you a seat.”</p>
+      <div class="panels">
+        <figure>
+          <figcaption>Earth · Reference video</figcaption>
+          <video src="/static/family-media/one-reference.mp4" controls playsinline preload="none" aria-label="Dinner reference video"></video>
+          <p><strong>56,363 bytes</strong></p>
+        </figure>
+        <figure>
+          <figcaption>Earth · Low-bitrate video</figcaption>
+          <video src="/static/family-media/one-baseline.mp4" controls playsinline preload="none" aria-label="Dinner low-bitrate video"></video>
+          <p><strong>22,410 bytes</strong></p>
+        </figure>
+        <figure>
+          <figcaption>Mars · Original audio · Reconstructed portrait</figcaption>
+          <video src="/static/family-media/one-reconstruction.mp4" controls playsinline preload="none" aria-label="Dinner reconstructed portrait"></video>
+          <p><a href="/static/family-media/one.zip" download>Download message ZIP</a> · <strong>11,188 bytes</strong> · 50.1% smaller than low-bitrate video</p>
+        </figure>
+      </div>
+    </section>
+
+    <section class="message" aria-labelledby="basil">
+      <h2 id="basil">The basil bloomed</h2>
+      <p>“The basil bloomed. See you soon.”</p>
+      <div class="panels">
+        <figure>
+          <figcaption>Earth · Reference video</figcaption>
+          <video src="/static/family-media/two-reference.mp4" controls playsinline preload="none" aria-label="Basil reference video"></video>
+          <p><strong>53,309 bytes</strong></p>
+        </figure>
+        <figure>
+          <figcaption>Earth · Low-bitrate video</figcaption>
+          <video src="/static/family-media/two-baseline.mp4" controls playsinline preload="none" aria-label="Basil low-bitrate video"></video>
+          <p><strong>20,899 bytes</strong></p>
+        </figure>
+        <figure>
+          <figcaption>Mars · Original audio · Reconstructed portrait</figcaption>
+          <video src="/static/family-media/two-reconstruction.mp4" controls playsinline preload="none" aria-label="Basil reconstructed portrait"></video>
+          <p><a href="/static/family-media/two.zip" download>Download message ZIP</a> · <strong>10,293 bytes</strong> · 50.7% smaller than low-bitrate video</p>
+        </figure>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

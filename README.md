@@ -128,6 +128,8 @@ This build has **no NASA network endpoint**. Receipt is simulated locally. **Exp
 
 ## HAL2030 Voice Engine & Family Archive
 
+- **Family Message Demo:** Compare two synthetic messages rendered offline from audio and facial motion using the same preloaded portrait. See the [demo and benchmark guide](docs/FAMILY_MESSAGE_DEMO.md).
+
 - **Web Console (`server.py`):** Provides isolated six-crew companion sessions backed by real local CPU voice inference via `/api/hal/voice/status`, `/api/hal/voice/speak` (**Kokoro-82M INT8** WAV synthesis), and `/api/hal/voice/transcribe` (**Faster-Whisper tiny.en** speech-to-text). Crew health packets remain excluded from private companion chat, and family-archive replies are clearly labeled as simulations.
 - **Legacy Desktop Prototype (`main.py`):** Retains simulated voice-state preview and offline Vosk vision-check recognition.
 

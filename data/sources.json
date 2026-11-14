@@ -90,6 +90,71 @@
         "Exact test duration and equivalence to a three-minute PVT-B remain unverified.",
         "Healthy terrestrial research cohort, not astronaut norms or a validated readiness threshold."
       ]
+    },
+    {
+      "id": "astra.family-message.synthetic.v2",
+      "title": "ASTRA-Core fictional family messages and LivePortrait benchmark",
+      "kind": "synthetic",
+      "status": "shipped",
+      "version": "2",
+      "license": "MIT",
+      "authors": [
+        "ASTRA-Core project contributors"
+      ],
+      "files": [
+        {
+          "path": "static/family-media/one-baseline.mp4",
+          "sha256": "af11750d4f5f75d2083356ec259dc465919c7658f5074c0f2f759143ab52847f"
+        },
+        {
+          "path": "static/family-media/one-reconstruction.mp4",
+          "sha256": "ea302d7be9eec67fa4b9aa26eee56c82f4e891012cbeeadbe1624e2358dedfd8"
+        },
+        {
+          "path": "static/family-media/one-reference.mp4",
+          "sha256": "655a9677b839dc74ba330eb244ae77adec603d7423b6b0d461d4635b5b6ab512"
+        },
+        {
+          "path": "static/family-media/one.zip",
+          "sha256": "d70b2a8719c55b203a31ca34f1e3bc41fd17a9e12d9db98bb1727ad83a95c3ba"
+        },
+        {
+          "path": "static/family-media/portrait.png",
+          "sha256": "5c8e9838e649105c54f1b71d226c99df2373c94d8e1362375048d4ab75bd0ebf"
+        },
+        {
+          "path": "static/family-media/two-baseline.mp4",
+          "sha256": "75a36283b538c11b5eb469af8ea404d13aef0f517d7a07180955b6fa141996ce"
+        },
+        {
+          "path": "static/family-media/two-reconstruction.mp4",
+          "sha256": "03eed009a206527726dfd415586551acc8e52c47ce61ca91f4b432d4a00422ae"
+        },
+        {
+          "path": "static/family-media/two-reference.mp4",
+          "sha256": "2034ed41135e5ea4a89ce7e8677568f769ccd933d625edb3af52858a820a6d42"
+        },
+        {
+          "path": "static/family-media/two.zip",
+          "sha256": "aa6f0c30b53c840ca6a4cce9fa0ac1d8f891ce35df40836213027ef59cd2bf86"
+        }
+      ],
+      "generation": {
+        "entry_point": "tools/build_family_demo.py",
+        "voice": "Windows System.Speech synthesized narration",
+        "benchmark": "tools/family_liveportrait.py",
+        "liveportrait_revision": "9b294b3d0536135442ea73cb01e6cb3ca7029dd3",
+        "upstream_model": "https://huggingface.co/KlingTeam/LivePortrait"
+      },
+      "transformations": [
+        "Generate two illustrated H.264/AAC reference clips from synthetic narration.",
+        "Extract Opus audio and relative facial motion on the sender. Generate a low-bitrate H.264 comparison with the same Opus speech.",
+        "Render both ZIPs on the CPU receiver using the same separately preloaded illustrated portrait."
+      ],
+      "limitations": [
+        "Fictional speaker and procedural portrait. Size comparison describes two short, low-motion examples.",
+        "Upstream models are installed separately. The app ships previews and payloads."
+      ]
     }
   ]
 }
