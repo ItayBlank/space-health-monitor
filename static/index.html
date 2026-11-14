@@ -9,6 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/checkins.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/static/pvt.css" />
 </head>
@@ -59,6 +60,11 @@
       <button id="rail-companion" class="rail-btn" title="HAL2030 Private Cabin Companion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.7"/></svg>
         <span class="rail-lbl">HAL</span>
+      </button>
+
+      <button id="rail-checkins" class="rail-btn" title="Private mood and stress check-ins">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/><path d="M8 12h2l1-2 2 4 1-2h2"/></svg>
+        <span class="rail-lbl">Check-ins</span>
       </button>
 
       <button id="rail-sim" class="rail-btn" title="24h Companion Simulation">
@@ -256,6 +262,65 @@
             <div id="notif-list" class="notif-list"></div>
           </div>
         </aside>
+      </section>
+
+      <section id="view-checkins" class="level-pane hidden" aria-label="Private mood and stress check-ins">
+        <div class="checkins-page">
+          <div class="sub-glass checkins-lock" id="checkins-lock">
+            <span class="triage-pill pill-nominal">PRIVATE · OWNER SIGN-IN REQUIRED</span>
+            <h2>My mood &amp; stress check-ins</h2>
+            <p>Sign in with the local credential provisioned for you. Crew selectors elsewhere in this demo do not grant access here.</p>
+            <form id="checkins-login" class="checkins-form">
+              <label>Crew ID<input id="checkins-crew-id" autocomplete="username" required maxlength="64" /></label>
+              <label>Password<input id="checkins-password" type="password" autocomplete="current-password" required /></label>
+              <button class="btn-glass-pri" type="submit">Unlock my check-ins</button>
+            </form>
+            <p id="checkins-login-error" class="checkins-error" role="alert"></p>
+            <small>Local demo data is readable by the computer and server administrators. This is not production confidentiality.</small>
+          </div>
+
+          <div id="checkins-private" class="hidden">
+            <div class="checkins-toolbar">
+              <div><span class="triage-pill pill-nominal">PRIVATE · SIGNED IN</span><span id="checkins-owner"></span></div>
+              <button id="checkins-logout" class="btn-glass-sec" type="button">Lock &amp; sign out</button>
+            </div>
+            <div id="checkins-followup" class="sub-glass checkins-followup hidden" role="status"></div>
+            <div class="checkins-grid">
+              <div class="sub-glass">
+                <h2>How are you today?</h2>
+                <p>Mood: 1 = very low, 5 = very good. Stress: 1 = none, 5 = very high.</p>
+                <form id="checkins-entry-form" class="checkins-form">
+                  <label>Mood <output id="mood-value">3</output><input id="checkin-mood" type="range" min="1" max="5" value="3" /></label>
+                  <label>Perceived stress <output id="stress-value">3</output><input id="checkin-stress" type="range" min="1" max="5" value="3" /></label>
+                  <label>Optional private note<textarea id="checkin-note" rows="2" maxlength="280"></textarea></label>
+                  <button class="btn-glass-pri" type="submit">Save private check-in</button>
+                  <span id="checkins-save-status" role="status"></span>
+                </form>
+              </div>
+              <div class="sub-glass">
+                <h2>Your personal usual range</h2>
+                <div id="checkins-baseline"></div>
+                <button id="checkins-demo" class="btn-glass-sec" type="button">Show synthetic examples</button>
+                <div id="checkins-demo-results" class="checkins-demo-results"></div>
+              </div>
+            </div>
+            <div class="sub-glass checkins-history-card">
+              <div class="panel-head"><h2>Recent private history</h2><button id="checkins-share-open" class="btn-glass-sec" type="button" disabled>Request confidential consult</button></div>
+              <p>Select only the entries you want included in a local consult request. Nothing is shared by default.</p>
+              <div id="checkins-history" class="checkins-history"></div>
+            </div>
+            <div id="checkins-share" class="sub-glass checkins-share hidden">
+              <h2>Review before requesting</h2>
+              <p>Recipient: <strong>Flight surgeon (local demo)</strong>. This request will be stored locally and not delivered.</p>
+              <div id="checkins-share-preview"></div>
+              <label class="checkins-consent"><input id="checkins-consent" type="checkbox" /> I explicitly consent to include only the selected entries in this local request.</label>
+              <button id="checkins-share-submit" class="btn-glass-pri" type="button" disabled>Record local request</button>
+              <button id="checkins-share-cancel" class="btn-glass-sec" type="button">Cancel</button>
+              <p id="checkins-share-status" role="status"></p>
+            </div>
+            <small class="checkins-disclaimer">The three-check-in rule is illustrative and supportive only. It is not a diagnosis or fitness-for-duty decision. Missed check-ins are not treated as reassuring observations.</small>
+          </div>
+        </div>
       </section>
 
       <!-- ==================== LEVEL 2: ASTRONAUT BODY & INTERVENTION POP-UP ==================== -->
@@ -1141,5 +1206,6 @@
 
   <audio id="voice-audio-player" class="hidden"></audio>
   <script src="/static/app.js"></script>
+  <script src="/static/checkins.js"></script>
 </body>
 </html>

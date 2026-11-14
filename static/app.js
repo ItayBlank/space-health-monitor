@@ -822,6 +822,7 @@ function setLevel(newLevel) {
 
   const viewMap = {
     glance: "view-glance",
+    checkins: "view-checkins",
     body: "view-simple",
     cardio: "view-cardio",
     engineer: "view-engineer",
@@ -831,6 +832,7 @@ function setLevel(newLevel) {
   };
   const railMap = {
     glance: "rail-glance",
+    checkins: "rail-checkins",
     body: "rail-body",
     cardio: "rail-cardio",
     engineer: "rail-engineer",
@@ -844,6 +846,7 @@ function setLevel(newLevel) {
 
   document.body.classList.toggle("glance-active", newLevel === "glance");
   winEl?.classList.toggle("glance-layout-active", newLevel === "glance");
+  document.dispatchEvent(new CustomEvent("astra-level-change", { detail: { level: newLevel } }));
   $("btn-back-glance").classList.toggle("hidden", newLevel === "glance");
 
   if (switching && !reduceMotion) {
@@ -867,7 +870,10 @@ function setLevel(newLevel) {
   const active = state.crewSimCache[state.activeCrewId];
   const crewLabel = active ? active.profile.name : "Crew";
 
-  if (newLevel === "glance") {
+  if (newLevel === "checkins") {
+    $("win-main-title").textContent = "My Private Check-ins";
+    $("win-main-sub").textContent = "Owner-only mood and perceived stress history";
+  } else if (newLevel === "glance") {
     $("win-main-title").textContent = "ASTRA · HAL2030 Crew Glance";
     $("win-main-sub").textContent = `Mars-Transit Tablet · Day ${String(state.missionDays).padStart(3, "0")} · 6-Crew Local Autonomous Telemetry`;
   } else if (newLevel === "body") {
@@ -3302,6 +3308,7 @@ function renderAll() {
 function bindEvents() {
   // VisionOS Rail & Header Navigation
   $("rail-glance").addEventListener("click", () => setLevel("glance"));
+  $("rail-checkins").addEventListener("click", () => setLevel("checkins"));
   $("rail-body").addEventListener("click", () => setLevel("body"));
   $("rail-cardio").addEventListener("click", () => setLevel("cardio"));
   $("rail-engineer").addEventListener("click", () => setLevel("engineer"));
