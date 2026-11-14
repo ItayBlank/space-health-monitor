@@ -58,7 +58,7 @@ def main():
                 raise RuntimeError(error.read_text(encoding='utf-8') if error.exists() else 'Voice check failed without a traceback')
             voice = json.loads(receipt.read_text(encoding='utf-8'))
             expected = executable.parent / 'voice-model' / 'vosk-model-small-en-us-0.15'
-            if not voice.get('loaded') or not voice.get('silence_decoded') or Path(voice['model_path']) != expected:
+            if not voice.get('loaded') or not voice.get('silence_decoded') or Path(voice['model_path']).resolve() != expected.resolve():
                 raise RuntimeError('Bundled voice model was not detected and loaded')
         queue = cwd / 'local' / 'HAL2030' / 'runtime' / 'downlink' / 'queue.json'
         if json.loads(queue.read_text(encoding='utf-8')) != []:
