@@ -7,7 +7,8 @@ The executable is unsigned. It is a hackathon prototype, not a signed installer.
 The offline English Vosk model is included and detected automatically.
 In Crew detail, open Start vision check and click Enable microphone.
 Allow microphone access if Windows prompts. No model download or selection is needed.
-See THIRD_PARTY_NOTICES.txt and Apache-2.0.txt for model attribution and terms.
+See THIRD_PARTY_NOTICES.md, SOURCES.json and Apache-2.0.txt for attribution and terms.
+OpenNeuro is an assessed PVT source; its participant data is not included.
 
 Telemetry and portraits are bundled. All crew readings are synthetic.
 Ground-link delivery is simulated locally, not transmitted to NASA.

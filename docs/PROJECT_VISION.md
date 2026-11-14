@@ -19,4 +19,4 @@ Claim a feature in the [issue tracker](https://github.com/ItayBlank/space-health
 
 ## Data and license
 
-The [MIT License](../LICENSE) covers this project's code and documentation. Linked datasets retain their original terms. The demo uses public source data where available and labels simulated crew records.
+The [MIT License](../LICENSE) covers this project's code and documentation. Linked datasets retain their original terms. Current telemetry is synthetic. Source/model attribution and assessed research datasets are tracked in [the source registry](../data/sources.json) and [third-party notices](../THIRD_PARTY_NOTICES.md).

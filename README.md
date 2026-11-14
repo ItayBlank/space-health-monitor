@@ -229,7 +229,15 @@ Claim a feature in the [issue tracker](../../issues) before starting. Work on on
 
 ## Data and license
 
-The [MIT License](LICENSE) covers this project's code and documentation. Linked datasets retain their original terms. The demo uses public source data where available and labels simulated crew records.
+The [MIT License](LICENSE) covers this project's code and documentation. External
+data and models retain their own licenses. Current telemetry is synthetic; the
+Windows download bundles the Vosk English model. OpenNeuro ds004902 v1.0.8 has been
+assessed for future PVT reference records but is **not imported into the app**.
+
+- [Source registry](data/sources.json): versions, licenses, file hashes and usage status.
+- [Third-party attribution](THIRD_PARTY_NOTICES.md): dataset/model authors and terms.
+- [Provenance policy and PVT assessment](docs/DATA_PROVENANCE.md): coverage, limitations,
+  and the distinction between measured results, dataset replay and synthetic data.
 
 ## CI maintenance contract
 

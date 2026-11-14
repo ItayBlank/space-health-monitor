@@ -49,7 +49,8 @@ jobs:
           python tools/download_voice_model.py --destination dist/voice-model
           Copy-Item LICENSE dist/LICENSE
           Copy-Item packaging/README.txt dist/README.txt
-          Copy-Item packaging/THIRD_PARTY_NOTICES.txt dist/THIRD_PARTY_NOTICES.txt
+          Copy-Item THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
+          Copy-Item data/sources.json dist/SOURCES.json
           Copy-Item packaging/Apache-2.0.txt dist/Apache-2.0.txt
       - name: Smoke-test packaged app
         run: python tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
