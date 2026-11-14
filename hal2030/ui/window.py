@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                QFrame, QStackedWidget, QButtonGroup, QComboBox,
                                QSlider, QCheckBox, QFileDialog, QMessageBox)
 
-from hal2030.config import CREW, SCENARIOS, ROOT
+from hal2030.config import CREW, SCENARIOS
 from hal2030.telemetry import CsvReplaySource
 from hal2030.alerts import AlertEngine
 from hal2030.downlink import DownlinkService
@@ -410,7 +410,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Snapshot could not be saved", str(error))
 
     def export_snapshot(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Export health snapshot", str(ROOT / "health_snapshot.json"), "JSON files (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, "Export health snapshot", str(self.service.output_dir.parent / "health_snapshot.json"), "JSON files (*.json)")
         if path:
             try:
                 self.service.export_snapshot(self.frame, self.alerts, Path(path))
