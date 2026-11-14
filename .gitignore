@@ -25,3 +25,9 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+
+# HAL2030 local runtime and packaging
+runtime/
+health_snapshot.json
+*.spec
+*.exe
