@@ -106,7 +106,7 @@ class MissionControlPage(QWidget):
         layout.addLayout(stats)
 
         queue_header = QHBoxLayout()
-        queue_header.addWidget(label("TELEMETRY OUTBOX", "heading"), 1)
+        queue_header.addWidget(label("TELEMETRY & VISION OUTBOX", "heading"), 1)
         self.queue_hint = label("No packets sent yet", "muted")
         queue_header.addWidget(self.queue_hint)
         inspect = button("Inspect selected packet")
@@ -128,7 +128,7 @@ class MissionControlPage(QWidget):
         layout.addWidget(self.table, 1)
 
         footer = QHBoxLayout()
-        included = label("INCLUDED  •  sensor readings, activity, signal state and current alerts", "muted")
+        included = label("INCLUDED  •  telemetry snapshots and explicitly saved vision reports", "muted")
         included.setWordWrap(True)
         excluded = label("PRIVATE  •  companion conversations are excluded", "muted")
         excluded.setWordWrap(True)

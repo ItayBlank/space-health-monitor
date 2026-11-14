@@ -44,6 +44,7 @@ class DetailPage(QWidget):
     """Scroll-friendly detail page with a persistent crew selector."""
 
     open_companion = Signal(str)
+    open_vision = Signal(str)
 
     def __init__(self, source, parent=None):
         super().__init__(parent)
@@ -108,6 +109,9 @@ class DetailPage(QWidget):
         right.addWidget(self.status_label)
         right.addWidget(self.sample_label)
         right.addWidget(companion)
+        vision = button("Start vision check")
+        vision.clicked.connect(lambda: self.open_vision.emit(self.crew_id))
+        right.addWidget(vision)
         header.addLayout(right)
         identity.body.addLayout(header)
         body.addWidget(identity)

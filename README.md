@@ -39,6 +39,19 @@ python3 -m venv .venv
 
 The `start_unix.sh` helper performs those steps when needed. A graphical desktop and Qt's platform dependencies are required. If a minimal Linux installation reports a missing `xcb` library, use the distribution's Qt/X11 runtime packages; Windows wheels include the required Qt libraries.
 
+## Guided near-vision check
+
+In **Crew detail**, select an astronaut and click **Start vision check** to open a
+separate window. It provides ruler calibration, 40 cm distance confirmation,
+screen-relative direction practice, rotated-E trials for each eye, slow spoken
+guidance, and confirmed offline voice answers. Buttons remain available.
+
+For microphone control, run `python tools/download_voice_model.py` once with the
+project environment, then click **Enable microphone** in the exam setup. Reports
+are saved locally and queued in Mission control. Display limits and the simulated
+baseline are explicit; this is a functional demo, not a validated clinical exam.
+See [the protocol and voice setup](docs/VISION_TEST.md).
+
 ## The five views
 
 | View | Implemented behavior |
