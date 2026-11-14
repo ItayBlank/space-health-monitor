@@ -6,6 +6,31 @@ HAL2030 combines a live crew overview, individual telemetry, a sensor registry, 
 
 **Everything in the application is in English.** The supplied recording, people, events, and physiological signals are synthetic. After installing its dependencies, the application runs locally without an internet connection.
 
+## Download the Windows executable
+
+Open this repository's **Actions → Test and build**, select a successful run,
+and download the **HAL2030-windows-x64-<commit>** artifact. Extract the ZIP and
+launch `dist/HAL2030.exe`. GitHub requires sign-in to download workflow artifacts.
+No Python installation is needed. Artifacts are retained for 14 days; builds run
+on pushes and pull requests and can also be started with **Run workflow**.
+
+The executable bundles the synthetic recording and portraits. It is unsigned,
+and the first launch takes a few seconds to extract its dependencies. Packaged
+runs preserve their outbox in `%LOCALAPPDATA%\HAL2030\runtime\downlink`;
+`--runtime-dir` overrides that location. Source runs keep `runtime/downlink/`.
+
+To build locally on Windows using the development environment below:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
+.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+```
+
+CI runs the core tests before packaging and launches all five packaged pages
+offscreen from a separate working directory. This is a startup/resource-loading
+check, not a complete interactive Windows test.
+
 ## Quick start on Windows / VS Code
 
 1. Clone this repository and open `space-health-monitor` in VS Code; this folder contains `main.py`.
