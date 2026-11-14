@@ -51,8 +51,11 @@ def main():
         if args.verify_voice_model:
             receipt = output / 'voice-model.json'
             receipt.unlink(missing_ok=True)
-            subprocess.run([str(executable), '--verify-voice-model', str(receipt)],
-                           cwd=cwd, env=env, check=True, timeout=180)
+            result = subprocess.run([str(executable), '--verify-voice-model', str(receipt)],
+                                    cwd=cwd, env=env, timeout=180)
+            if result.returncode:
+                error = receipt.with_suffix('.error.txt')
+                raise RuntimeError(error.read_text(encoding='utf-8') if error.exists() else 'Voice check failed without a traceback')
             voice = json.loads(receipt.read_text(encoding='utf-8'))
             expected = executable.parent / 'voice-model' / 'vosk-model-small-en-us-0.15'
             if not voice.get('loaded') or not voice.get('silence_decoded') or Path(voice['model_path']) != expected:

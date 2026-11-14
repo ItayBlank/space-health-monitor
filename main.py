@@ -23,8 +23,14 @@ def main():
     parser.add_argument("--verify-voice-model", type=Path, metavar="RECEIPT", help="Load the offline model without microphone access and exit (developer QA)")
     args = parser.parse_args()
     if args.verify_voice_model:
-        from hal2030.voice_smoke import verify_voice_model
-        verify_voice_model(args.verify_voice_model)
+        try:
+            from hal2030.voice_smoke import verify_voice_model
+            verify_voice_model(args.verify_voice_model)
+        except Exception:
+            import traceback
+            args.verify_voice_model.parent.mkdir(parents=True, exist_ok=True)
+            args.verify_voice_model.with_suffix('.error.txt').write_text(traceback.format_exc(), encoding='utf-8')
+            return 1
         return 0
     if args.smoke_test and args.screenshot:
         parser.error("Use either --smoke-test or --screenshot, not both.")
