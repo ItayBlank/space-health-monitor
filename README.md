@@ -2,9 +2,9 @@
 
 A local Python web console (with a companion PySide6 desktop prototype) for the **NASA Space Apps Challenge 2026: Create Health Monitoring Software for Astronauts on Space Missions**.
 
-**ASTRA-Core + HAL2030** pairs a FastAPI telemetry engine (`server.py`, `astra_core/`, `hal2030/`) with a Liquid Glass web interface (`static/`) featuring Day/Night mission themes, crew vitals, PhysioNet BIDMC/PTT physiological replay, ISS REM/DOSTEL space-radiation shielding analysis, SANS/PVT cognitive-visual assessments, delayed Mars/Earth telemetry downlink simulation, and an offline CPU natural voice engine (**Kokoro-82M INT8** TTS + **Faster-Whisper tiny.en** STT).
+**ASTRA-Core + HAL2030** pairs a FastAPI telemetry engine (`server.py`, `astra_core/`, `hal2030/`) with a Liquid Glass web interface (`static/`) featuring Day/Night mission themes, crew vitals, PhysioNet BIDMC/PTT physiological replay, ISS REM/DOSTEL space-radiation shielding analysis, guided near-vision testing and a five-trial reaction demo, delayed Mars/Earth telemetry downlink simulation, and an offline CPU natural voice engine (**Kokoro-82M INT8** TTS + **Faster-Whisper tiny.en** STT).
 
-**Everything in the application is in English.** Supplied scenario telemetry, portraits, and crew communications are synthetic/educational or derived from documented open research datasets (`data/sources.json`). Once dependencies and voice weights are installed locally, the web console runs without an internet connection.
+**Everything in the application is in English.** Supplied scenario telemetry, portraits, and crew communications are synthetic/educational or derived from research datasets. The source registry (`data/sources.json`) covers the earlier assets; provenance for the new PhysioNet/radiation data and natural-voice models still needs reconciliation. Voice inference can run locally after installing its dependencies and weights. The current HTML still loads Chart.js and fonts from external CDNs; a fresh fully offline browser session is not yet guaranteed.
 
 ---
 
@@ -52,11 +52,24 @@ Open `http://127.0.0.1:8000` in Chrome, Edge, or Firefox.
 | **Actions** | Crew-filtered operational & medical check-off protocols reactive to live alert severity. |
 | **Heart (Cardiovascular)** | Individual 1 Hz vitals, activity-aware rules, synthetic ECG/PPG strips, and **PhysioNet BIDMC / PTT** dataset replay. |
 | **RadLab (Radiation)** | **ISS REM 2024 & DOSTEL** orbital dose-rate timeline, module shielding simulation, and Solar Particle Event (SPE) / GCR presets. |
-| **Sensors & SANS** | All 42 sensor channels with filters, Psychomotor Vigilance Task (**PVT**), **SANS** optical/Amsler exam with voice readout, and Guided Near-Vision check. |
+| **Sensors & SANS** | All 42 sensor channels with filters, five-trial reaction demo (not the planned three-minute PVT), **SANS** optical/Amsler exam with voice readout, and Guided Near-Vision check. |
 | **Downlink (Mission Link)** | Durable local JSON snapshot queue (`runtime/downlink/`) with offline toggle and **Local · 3 s** / **Mars · 22 min** latency presets. |
 | **HAL2030 Companion** | Six isolated crew chat sessions with local **Kokoro-82M INT8** natural speech output, **Faster-Whisper tiny.en** microphone transcription, and IEC 60601-1-8 / NASA-STD-3001 gentle marimba chimes + anti-overload critical callouts (`Voice` / `Chime` / `Muted`). |
 
 ---
+
+## Feature status and next work
+
+See [the web roadmap](docs/PROJECT_VISION.md) for implemented, partial and superseded
+work. Next: [private mood/stress check-ins (#11)](https://github.com/ItayBlank/space-health-monitor/issues/11)
+and [pre-task three-minute PVT (#12)](https://github.com/ItayBlank/space-health-monitor/issues/12).
+The older combined issue #1 is superseded. Radiation #2 and hatch/CO2 #3 remain
+open; the existence of their dashboard panels does not fulfill every criterion.
+
+Current chat separation is a demo UI feature, not authenticated confidentiality.
+The forthcoming mood/stress feature must enforce owner access and explicit sharing.
+The CI executable and screenshot smoke test target the legacy desktop app;
+they do not establish browser workflow or web microphone correctness.
 
 ## Legacy Desktop Prototype & CI Executable (`main.py`)
 
@@ -211,7 +224,7 @@ For the data schema and exact rule settings, see [docs/DATA_AND_RULES.md](docs/D
 
 The original project overview and planned feature demos are preserved in [docs/PROJECT_VISION.md](docs/PROJECT_VISION.md). They describe project direction; the implemented HAL2030 views are listed above.
 
-Claim a feature in the [issue tracker](../../issues) before starting. Work on one branch per issue, open a small PR, and write `Closes #N` in the PR description. Agree on a shared timeline with UTC timestamps and stable crew and module IDs. Keep observed, simulated, and estimated values labeled in the UI.
+Claim a feature in the [issue tracker](https://github.com/ItayBlank/space-health-monitor/issues) before starting. Work on one branch per issue, open a small PR, and write `Closes #N` in the PR description. Agree on a shared timeline with UTC timestamps and stable crew and module IDs. Keep observed, simulated, and estimated values labeled in the UI.
 
 [Challenge](https://www.spaceappschallenge.org/2026/challenges/health-monitoring-software/)
 

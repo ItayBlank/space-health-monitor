@@ -1,5 +1,40 @@
 # Architecture and extension guide
 
+## Active web application
+
+`server.py` serves `static/index.html` and the FastAPI endpoints. `static/app.js`
+owns browser navigation, selected crew, scenario state, charts and interactive
+test flows; `static/styles.css` owns presentation.
+
+| Component | Responsibility |
+| --- | --- |
+| `astra_core/hal_bridge.py` | Adapts the existing telemetry, alert, vision and local downlink services to HTTP handlers. |
+| `astra_core/vitals.py` | Physiological research replay and derived signal metrics. |
+| `astra_core/radiation.py` | Module/orbit model and schedule-weighted exposure comparison. |
+| `astra_core/readiness.py` | Combines pillar results; some sleep/mood content remains placeholder/demo state. |
+| `hal2030/voice_engine.py` | Local Kokoro synthesis and Faster-Whisper transcription; missing weights can trigger downloads. |
+| `hal2030/vision.py`, `hal2030/downlink.py` | Shared vision scoring/report and persistent simulated transport logic. |
+
+The server and bridge have process-level caches/singletons. Browser state and a
+crew selector are not per-user authorization. New private records need owner-scoped
+storage and access checks, explicit sharing and a separate consent boundary.
+Do not put private check-ins into the existing general telemetry/downlink payload.
+
+The present reaction demo keeps five trials in browser state and computes a mean.
+It has no durable protocol-versioned per-crew history or event-window completion
+gate. See [#12](https://github.com/ItayBlank/space-health-monitor/issues/12).
+Use monotonic clocks for response timing, UTC for scheduling, and keep simulated
+mission time separate from real measurements and retrospective research replay.
+
+Python CI covers backend/core tests. The PyInstaller and screenshot checks launch
+`main.py`; they do not run browser interactions. Fully offline web delivery also
+requires addressing external Chart.js/font resources in `static/index.html`.
+
+## Legacy desktop architecture
+
+The sections below describe `main.py` and `hal2030/ui/`, not the web server.
+They remain useful for shared-service history and the retained desktop prototype.
+
 ## Data flow
 
 `main.py` creates the Qt application, opens a `CsvReplaySource`, and constructs `MainWindow`. A single 100 ms GUI timer advances the replay clock. The source releases six 1 Hz `Sample` summaries for the current mission second; no UI code invents a fresh reading independently.

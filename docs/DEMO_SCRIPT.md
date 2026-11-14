@@ -1,4 +1,30 @@
-# Three-minute demonstration
+# Demonstration guide
+
+## Current web walkthrough
+
+Launch the web console using [README](../README.md), then open localhost:8000.
+This sequence follows the current navigation; it is a suggested walkthrough,
+not a claim that a new end-to-end browser test was performed.
+
+1. **Glance / Actions:** select crew and a scenario. Distinguish synthetic scenario
+   telemetry from research replay and explain that recommendations are illustrative.
+2. **Heart / RadLab:** show physiological replay and modeled exposure with cabin
+   schedules. Describe derived estimates and storm multipliers as model outputs.
+3. **Sensors:** show sensor availability and the calibrated vision flow. The
+   five-trial reaction card is an early demo, not a three-minute PVT or clearance test.
+4. **Link:** inspect a locally queued report and simulated delivery. There is no
+   real ground-control delivery acknowledgement.
+5. **HAL:** demonstrate speech only after loading local models and enabling the
+   microphone. Crew-specific conversations are not evidence of authenticated privacy.
+6. **Roadmap:** explain [#11](https://github.com/ItayBlank/space-health-monitor/issues/11)
+   and [#12](https://github.com/ItayBlank/space-health-monitor/issues/12) as planned.
+   Their acceptance demos must show sustained versus isolated check-ins, and
+   short sleep versus already-tested versus unknown sleep, respectively.
+
+## Legacy desktop three-minute demonstration
+
+The walkthrough below applies to the retained PySide6 app (`main.py`). Its page
+names and voice placeholders must not be presented as web behavior.
 
 ## 0:00–0:25 — One shared health picture
 
