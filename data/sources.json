@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "description": "Source registry for shipped data/models and assessed candidates. Inclusion in this registry does not mean data is imported or validated.",
+  "sources": [
+    {
+      "id": "hal2030.synthetic-telemetry.v1",
+      "title": "HAL2030 deterministic synthetic telemetry",
+      "kind": "synthetic",
+      "status": "shipped",
+      "license": "MIT",
+      "authors": [
+        "HAL2030 project contributors"
+      ],
+      "files": [
+        {
+          "path": "data/telemetry_10min.csv",
+          "sha256": "3aa83e0a484c486b4411a3a2d3f9f0a2ddbd5a10e8f030faab1d0bf9c9d9e525",
+          "checksum_scope": "Git blob bytes; working-tree line endings may differ on Windows"
+        }
+      ],
+      "generation": {
+        "entry_point": "tools/generate_telemetry.py",
+        "implementation": "hal2030/telemetry.py",
+        "seed": 2030
+      },
+      "transformations": [
+        "Generated fictional crew measurements; no OpenNeuro data used."
+      ],
+      "limitations": [
+        "Not observed astronaut physiology. Waveform strips are separate illustrations, not recovered from the CSV."
+      ]
+    },
+    {
+      "id": "vosk.small-en-us.0.15",
+      "title": "Vosk small English US model",
+      "kind": "model",
+      "status": "bundled_by_ci",
+      "version": "0.15",
+      "authors": [
+        "Alpha Cephei Inc"
+      ],
+      "copyright": "Copyright 2020 Alpha Cephei Inc",
+      "license": "Apache-2.0",
+      "license_file": "packaging/Apache-2.0.txt",
+      "license_evidence_url": "https://alphacephei.com/vosk/models",
+      "files": [
+        {
+          "url": "https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip",
+          "sha256": "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498"
+        }
+      ],
+      "transformations": [
+        "Archive extracted without modifying model files; original README retained."
+      ],
+      "limitations": [
+        "Speech-command recognition only; no health inference."
+      ]
+    },
+    {
+      "id": "openneuro.ds004902.v1.0.8",
+      "title": "A Resting-state EEG Dataset for Sleep Deprivation",
+      "kind": "research_dataset",
+      "status": "assessed_not_imported",
+      "dataset_id": "ds004902",
+      "version": "1.0.8",
+      "doi": "10.18112/openneuro.ds004902.v1.0.8",
+      "url": "https://openneuro.org/datasets/ds004902/versions/1.0.8",
+      "authors": [
+        "Chuqin Xiang",
+        "Xinrui Fan",
+        "Duo Bai",
+        "Ke Lv",
+        "Xu Lei"
+      ],
+      "license": "CC0-1.0",
+      "upstream_license_value": "CC0",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_evidence_url": "https://raw.githubusercontent.com/OpenNeuroDatasets/ds004902/1.0.8/dataset_description.json",
+      "citation": "Xiang, C., Fan, X., Bai, D., Lv, K., and Lei, X. A Resting-state EEG Dataset for Sleep Deprivation. OpenNeuro, version 1.0.8. doi:10.18112/openneuro.ds004902.v1.0.8.",
+      "related_publication": "https://doi.org/10.1038/s41597-024-03268-2",
+      "acknowledgements": "This study is supported by National Key Research and Development Program of China (2021YFC2501500).",
+      "file_manifest": "data/provenance/ds004902-1.0.8-audit.json",
+      "assessment": "docs/DATA_PROVENANCE.md#ds004902-assessment",
+      "transformations": [
+        "Assessment only: counted nonempty TSV records and inspected headers. No app records created or participant responses redistributed."
+      ],
+      "limitations": [
+        "Incomplete paired PVT coverage and inconsistent column names.",
+        "No trial stimulus onsets or inter-stimulus intervals in inspected TSVs.",
+        "Exact test duration and equivalence to a three-minute PVT-B remain unverified.",
+        "Healthy terrestrial research cohort, not astronaut norms or a validated readiness threshold."
+      ]
+    }
+  ]
+}

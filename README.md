@@ -10,11 +10,13 @@ HAL2030 combines a live crew overview, individual telemetry, a sensor registry, 
 
 Open this repository's **Actions → Test and build**, select a successful run,
 and download the **HAL2030-windows-x64-<commit>** artifact. Extract the ZIP and
-launch `dist/HAL2030.exe`. GitHub requires sign-in to download workflow artifacts.
+launch `HAL2030.exe`. Keep the included `voice-model/` folder beside the executable. GitHub requires sign-in to download workflow artifacts.
 No Python installation is needed. Artifacts are retained for 14 days; builds run
 on pushes and pull requests and can also be started with **Run workflow**.
 
-The executable bundles the synthetic recording and portraits. It is unsigned,
+The download bundles the synthetic recording, portraits, and offline English Vosk
+model. The app finds the model automatically; no model setup or internet is needed
+on the tester's PC. Click **Enable microphone** in the vision check to use voice. It is unsigned,
 and the first launch takes a few seconds to extract its dependencies. Packaged
 runs preserve their outbox in `%LOCALAPPDATA%\HAL2030\runtime\downlink`;
 `--runtime-dir` overrides that location. Source runs keep `runtime/downlink/`.
@@ -24,7 +26,20 @@ To build locally on Windows using the development environment below:
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
-.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+.\.venv\Scripts\python.exe tools/download_voice_model.py --engine vosk --destination dist/voice-model
+.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
+```
+
+## ASTRA-Core + HAL2030 Web Console
+
+Alongside the desktop prototype (`main.py`), this branch provides the integrated **ASTRA-Core + HAL2030** FastAPI & Liquid Glass web console (`server.py`, `astra_core/`, `static/`):
+
+```powershell
+# Launch the web console
+uvicorn server:app --reload --port 8000
+
+# Optional offline CPU natural voice models (Kokoro-82M INT8 + Faster-Whisper tiny.en)
+python tools/download_voice_model.py --engine natural
 ```
 
 CI runs the core tests before packaging and launches all five packaged pages
@@ -63,6 +78,20 @@ python3 -m venv .venv
 ```
 
 The `start_unix.sh` helper performs those steps when needed. A graphical desktop and Qt's platform dependencies are required. If a minimal Linux installation reports a missing `xcb` library, use the distribution's Qt/X11 runtime packages; Windows wheels include the required Qt libraries.
+
+## Guided near-vision check
+
+In **Crew detail**, select an astronaut and click **Start vision check** to open a
+separate window. It provides ruler calibration, 40 cm distance confirmation,
+screen-relative direction practice, rotated-E trials for each eye, slow spoken
+guidance, and confirmed offline voice answers. Buttons remain available.
+
+The Windows download includes the microphone model. For source runs only, run
+`python tools/download_voice_model.py` once with the project environment. Then
+click **Enable microphone** in the exam setup. Reports
+are saved locally and queued in Mission control. Display limits and the simulated
+baseline are explicit; this is a functional demo, not a validated clinical exam.
+See [the protocol and voice setup](docs/VISION_TEST.md).
 
 ## The five views
 
@@ -212,7 +241,15 @@ Claim a feature in the [issue tracker](../../issues) before starting. Work on on
 
 ## Data and license
 
-The [MIT License](LICENSE) covers this project's code and documentation. Linked datasets retain their original terms. The demo uses public source data where available and labels simulated crew records.
+The [MIT License](LICENSE) covers this project's code and documentation. External
+data and models retain their own licenses. Current telemetry is synthetic; the
+Windows download bundles the Vosk English model. OpenNeuro ds004902 v1.0.8 has been
+assessed for future PVT reference records but is **not imported into the app**.
+
+- [Source registry](data/sources.json): versions, licenses, file hashes and usage status.
+- [Third-party attribution](THIRD_PARTY_NOTICES.md): dataset/model authors and terms.
+- [Provenance policy and PVT assessment](docs/DATA_PROVENANCE.md): coverage, limitations,
+  and the distinction between measured results, dataset replay and synthetic data.
 
 ## CI maintenance contract
 

@@ -134,6 +134,7 @@ class MainWindow(QMainWindow):
         self.dashboard.select_sensors.connect(lambda: self.navigate(2))
         self.dashboard.select_companion.connect(self.show_companion)
         self.detail.open_companion.connect(self.show_companion)
+        self.detail.open_vision.connect(self.show_vision)
         self.detail.selector.currentIndexChanged.connect(
             lambda index: setattr(self, "current_crew", self.detail.selector.itemData(index)))
         self.companion.tabs.currentChanged.connect(
@@ -300,6 +301,16 @@ class MainWindow(QMainWindow):
         self.current_crew = crew_id
         self.companion.set_crew(crew_id)
         self.navigate(4)
+
+    def show_vision(self, crew_id):
+        """Open a dedicated near-vision window for the selected crew member."""
+        from .vision import VisionDialog
+        if self.playing:
+            self.toggle_playback()
+        self.vision_dialog = VisionDialog(crew_id, self.service, self.position, self)
+        self.vision_dialog.finished.connect(
+            lambda _: self.mission.update_frame(self.frame, self.alerts, self.position))
+        self.vision_dialog.open()
 
     def toggle_playback(self):
         if self.position >= self.source.duration-1 and not self.playing:

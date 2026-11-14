@@ -5,7 +5,9 @@ for a software demonstration, not medical or flight-certified limits.
 """
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+from .paths import resource_root
+
+ROOT = resource_root()
 DATA_PATH = ROOT / "data" / "telemetry_10min.csv"
 DEMO_DURATION = 600
 DEMO_SEED = 2030

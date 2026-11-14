@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "HAL2030 record provenance",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "created_at_utc",
+    "units",
+    "transformations"
+  ],
+  "properties": {
+    "kind": {
+      "enum": [
+        "measured",
+        "dataset_replay",
+        "synthetic",
+        "derived"
+      ]
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protocol_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protocol_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at_utc": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    },
+    "upstream_subject_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "upstream_session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "units": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "transformations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parent_record_ids": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "timing_method": {
+      "type": "string"
+    },
+    "input_device": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "dataset_replay"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "source_id",
+          "upstream_subject_id",
+          "upstream_session_id",
+          "source_file"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "measured"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "protocol_id",
+          "protocol_version"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "synthetic"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "source_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "derived"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "parent_record_ids"
+        ]
+      }
+    }
+  ]
+}

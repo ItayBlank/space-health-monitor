@@ -13,6 +13,10 @@ review approvals are optional, but the required CI checks must pass.
 - Commit distributable resources under `assets/`, `data/`, or the application
   package (`hal2030/`). CI packages tracked resources from these locations. Check
   their license and redistribution terms before adding them.
+- Register data/model sources in `data/sources.json`, include attribution in
+  `THIRD_PARTY_NOTICES.md`, and follow `docs/DATA_PROVENANCE.md`. Pin versions,
+  hash original files, document transformations, and distinguish assessed sources
+  from imported/shipped data. Preserve provenance in derived records.
 - Keep runtime output, credentials, private data, virtual environments and
   downloaded models out of Git. Document explicit setup for external resources.
 - Add behavioral tests for new features and regression tests for fixes where
@@ -42,7 +46,8 @@ On Windows, validate packaging when the change affects distribution:
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
-.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+.\.venv\Scripts\python.exe tools/download_voice_model.py --destination dist/voice-model
+.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
 ```
 
 The app exposes its current navigation pages to the smoke runner. New dialogs and

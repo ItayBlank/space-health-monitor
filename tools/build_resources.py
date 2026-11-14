@@ -11,7 +11,7 @@ def tracked_resources(root: Path) -> list[tuple[str, str]]:
     """
     root = root.resolve()
     result = subprocess.run(['git', '-C', str(root), 'ls-files', '-z', '--',
-                             'assets', 'data', 'hal2030', 'LICENSE'],
+                             'assets', 'data', 'hal2030', 'static', 'LICENSE'],
                             check=True, capture_output=True)
     files = []
     for name in result.stdout.decode('utf-8').split('\0'):

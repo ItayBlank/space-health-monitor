@@ -117,6 +117,43 @@ class DownlinkService:
         self._save()
         return packet
 
+    def enqueue_report(self, report: dict, mission_time: float) -> dict:
+        """Persist a completed vision report and queue simulated delivery.
+
+        A report ID is idempotent. Reject invalid reports/times; propagate I/O
+        errors without retaining an unsaved in-memory queue entry.
+        """
+        import copy
+        if (report.get("schema") != "hal2030.vision_report.v1"
+                or not report.get("attempts") or not report.get("crew_id")
+                or not math.isfinite(mission_time) or mission_time < 0):
+            raise ValueError("A completed vision report and finite mission time are required.")
+        identifier = report.get("report_id", "")
+        if not identifier.startswith("VISION-") or not identifier.replace("-", "").isalnum():
+            raise ValueError("Invalid report ID.")
+        for attempt in report["attempts"]:
+            if set(attempt.get("eyes", {})) != {"left", "right"}:
+                raise ValueError("Both eyes must be complete.")
+        for packet in self.queue:
+            if packet["id"] == identifier:
+                return packet
+        content = copy.deepcopy(report)
+        content.update(packet_id=identifier, transport_simulated=True,
+                       destination="Mission Control simulator (local only)")
+        filename = identifier + ".json"
+        _write_json(self.output_dir / filename, content)
+        packet = dict(id=identifier, filename=filename, created_at=_utcnow(),
+                      mission_time=float(mission_time), crew_count=1, kind="vision_report",
+                      status="in_transit" if self.connected else "queued",
+                      eta_s=max(0.0, float(self.latency_s)), simulated=True)
+        self.queue.append(packet)
+        try:
+            self._save()
+        except OSError:
+            self.queue.remove(packet)
+            raise
+        return packet
+
     def tick(self, elapsed_seconds: float) -> None:
         """Advance simulated link by a nonnegative wall-clock delta."""
         delta = float(elapsed_seconds)

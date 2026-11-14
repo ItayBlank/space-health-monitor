@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASTRA-Core | ISS Cabin Tablet HUD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body class="theme-day state-nominal glance-active">
+  <!-- Scenic depth backdrop frosted through the VisionOS glass slate -->
+  <div class="ambient-orbit" aria-hidden="true">
+    <span class="tide-wave tide-wave-1"></span>
+    <span class="tide-wave tide-wave-2"></span>
+    <span class="orb orb-1"></span>
+    <span class="orb orb-2"></span>
+    <span class="orb orb-3"></span>
+    <div class="horizon-arc"></div>
+  </div>
+
+  <div class="vision-shell">
+    <!-- DETACHED VISIONOS VERTICAL GLASS ICON RAIL (LIKE LIFESTATS REFERENCE) -->
+    <aside class="vision-rail" aria-label="Primary Tablet Navigation">
+      <button id="rail-glance" class="rail-btn active" title="Level 1: Crew Glance">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+        <span class="rail-lbl">Glance</span>
+      </button>
+
+      <button id="rail-body" class="rail-btn" title="Level 2: Crew Actions &amp; Body Map">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5.5" r="2.5"/><path d="M9 10.5h6l1 5.5-2 6h-4l-2-6 1-5.5z"/></svg>
+        <span class="rail-lbl">Actions</span>
+      </button>
+
+      <button id="rail-cardio" class="rail-btn" title="Level 3: Heart & ECG Lab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg>
+        <span class="rail-lbl">Heart</span>
+      </button>
+
+      <button id="rail-engineer" class="rail-btn" title="Level 3: Radiation Lab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M12 3v3M21 12h-3M12 21v-3M3 12h3"/></svg>
+        <span class="rail-lbl">RadLab</span>
+      </button>
+
+      <button id="rail-sensors" class="rail-btn" title="42-Channel Sensors, PVT &amp; SANS Checks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1"/></svg>
+        <span class="rail-lbl">Sensors</span>
+      </button>
+
+      <button id="rail-downlink" class="rail-btn" title="Earth-Mars Delay Downlink Queue">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        <span class="rail-lbl">Link</span>
+      </button>
+
+      <button id="rail-companion" class="rail-btn" title="HAL2030 Private Cabin Companion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.7"/></svg>
+        <span class="rail-lbl">HAL</span>
+      </button>
+
+      <button id="rail-sim" class="rail-btn" title="24h Companion Simulation">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+        <span class="rail-lbl">24h Sim</span>
+      </button>
+
+      <div class="rail-sep"></div>
+
+      <button id="rail-storm" class="rail-btn" title="Toggle Solar Storm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 4 14 11 14 10 22 20 10 13 10 13 2"/></svg>
+        <span class="rail-lbl">Storm</span>
+      </button>
+
+      <button id="rail-theme" class="rail-btn" title="Switch Day / Night Glass">
+        <svg id="rail-theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+        <span id="rail-theme-lbl" class="rail-lbl">Day</span>
+      </button>
+    </aside>
+
+    <!-- MAIN FLOATING VISIONOS GLASS SLATE -->
+    <div id="glass-window" class="glass-window glance-layout-active">
+      <!-- CLEAN MINIMALIST HEADER -->
+      <header class="win-header">
+        <div class="win-title-group">
+          <button id="btn-back-glance" class="back-pill hidden" type="button">← Crew Glance</button>
+          <div>
+            <h1 id="win-main-title" class="win-title">ASTRA Crew Glance</h1>
+            <div id="win-main-sub" class="win-sub">ISS Cabin Tablet · Day 030 · Tap an avatar for interventions</div>
+          </div>
+        </div>
+
+        <div class="win-right-controls">
+          <div class="mode-switch theme-switch" role="group" aria-label="Appearance Mode">
+            <button id="theme-day" class="mode-btn active" type="button">☀ Day</button>
+            <button id="theme-night" class="mode-btn" type="button">🌙 Night</button>
+          </div>
+
+          <button id="top-voice-btn" class="glass-chip chip-voice" type="button" title="Lightweight CPU Voice Assistant (Kokoro + Whisper)">
+            <span id="top-voice-dot" class="voice-dot voice-off"></span>
+            <span id="top-voice-label">Checking Voice…</span>
+          </button>
+          <button id="top-chime-btn" class="glass-chip chip-chime chime-on" type="button" title="IEC 60601-1-8 Gentle Marimba Chime + Anti-Overload Red/Air Voice Callouts (Click to stop speech or cycle Voice / Chime / Muted)">🔊 Alerts: Voice</button>
+          <button id="btn-demo-sim" class="glass-chip chip-sim" type="button">▶ 24h Sim Demo</button>
+          <button id="top-btn-atmo" class="glass-chip" type="button">Cabin Air: OK</button>
+          <button id="top-btn-storm" class="glass-chip chip-storm" type="button">Storm: OFF</button>
+          <button id="top-btn-dosimeter" class="glass-chip" type="button">Dosimeter: ON</button>
+
+          <button id="notif-bell-btn" class="notif-pill" type="button" title="Jump to highest priority alert">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            <span id="notif-count-badge" class="notif-count">3</span>
+          </button>
+
+          <button id="header-active-avatar" class="header-avatar-btn" type="button" title="Open active crew body HUD">
+            <img id="header-avatar-img" src="/static/assets/portraits/anton.png" alt="Active crew" />
+            <span id="header-avatar-dot" class="avatar-dot dot-nominal"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- CREW-WIDE HABITAT ALERT BANNER -->
+      <div id="crew-wide-banner" class="crew-wide-banner hidden" role="alert">
+        <div class="cwb-left"><span id="cwb-badge" class="triage-pill pill-warning">CREW-WIDE ALERT</span><div class="cwb-copy"><strong id="cwb-title"></strong><div id="cwb-detail" class="cwb-detail"></div></div></div>
+        <button id="cwb-action-btn" class="btn-glass-pri cwb-btn" type="button">Resolve for All Crew</button>
+      </div>
+
+      <!-- INTERACTIVE 24H COMPANION SIMULATION BAR -->
+      <div id="sim-companion-bar" class="sub-glass sim-companion-bar hidden" role="region" aria-label="24-Hour Mars Companion Simulation">
+        <div class="sim-top-row">
+          <div class="sim-status-meta">
+            <span id="sim-clock" class="triage-pill pill-nominal">DAY 030 · 00:00 UTC</span>
+            <span class="sim-delay-tag">📡 Earth Delay: 20m each way · Autonomous Companion</span>
+          </div>
+          <div class="sim-controls">
+            <button id="sim-play-btn" class="eng-btn" type="button">⏸ Pause</button>
+            <button id="sim-next-btn" class="eng-btn" type="button">Next Event →</button>
+            <button id="sim-reset-btn" class="eng-btn" type="button">↺ Replay</button>
+            <button id="sim-close-btn" class="eng-btn" type="button">✕ Close</button>
+          </div>
+        </div>
+
+        <div class="sim-timeline">
+          <div class="sim-track"><div id="sim-progress-fill" class="sim-progress-fill"></div></div>
+          <div class="sim-stages">
+            <button class="sim-stage-btn active" data-stage="0" type="button">00:00 Calm Watch</button>
+            <button class="sim-stage-btn" data-stage="1" type="button">06:30 Air + Exercise</button>
+            <button class="sim-stage-btn" data-stage="2" type="button">12:30 Heart Alert</button>
+            <button class="sim-stage-btn" data-stage="3" type="button">19:00 Recovered</button>
+          </div>
+        </div>
+
+        <div id="sim-coach-box" class="sim-coach-box sim-nominal">
+          <div class="sim-coach-main">
+            <div class="sim-coach-head">
+              <span id="sim-coach-badge" class="triage-pill pill-nominal">ONBOARD COMPANION</span>
+              <strong id="sim-coach-title">Monitoring 24h Mars transit shift</strong>
+            </div>
+            <p id="sim-coach-msg" class="sim-coach-msg">All crew systems steady. Watch how onboard guidance spots and resolves issues with zero Earth wait.</p>
+            <div id="sim-coach-steps" class="sim-coach-steps"></div>
+          </div>
+          <div class="sim-coach-actions">
+            <button id="sim-guide-btn" class="btn-glass-pri" type="button">Take Next Action →</button>
+            <button id="sim-autofix-btn" class="btn-glass-sec" type="button">Apply Recovery Step</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== LEVEL 1: COMPACT CREW GLANCE (TABLET HOME) ==================== -->
+      <section id="view-glance" class="level-pane" aria-label="Cabin Tablet Crew Glance">
+        <div class="glance-left-col">
+          <!-- COMPACT HAL2030 10-MIN TELEMETRY REPLAY BAR -->
+          <div id="hal-replay-bar" class="sub-glass hal-replay-bar">
+            <div class="hal-replay-left">
+              <button id="hal-play-btn" class="eng-btn" type="button">▶ Replay</button>
+              <button id="hal-speed-btn" class="eng-btn" type="button">1×</button>
+              <span id="hal-clock" class="hal-clock-pill">T+00:40 / 09:59</span>
+              <span id="hal-co2-pill" class="hal-co2-pill">CO2: -- ppm</span>
+            </div>
+            <div class="hal-replay-mid">
+              <input id="hal-scrubber" class="hal-scrubber" type="range" min="0" max="599" value="40" aria-label="10-minute telemetry timeline" />
+            </div>
+            <div class="hal-replay-right">
+              <select id="hal-scenario-select" class="eng-select hal-scenario-select" aria-label="Jump to demonstration scenario">
+                <option value="0">00:00 · Nominal crew</option>
+                <option value="40" selected>00:40 · Anton: oxygen alert</option>
+                <option value="120">02:00 · Itay: oximeter signal lost</option>
+                <option value="185">03:05 · Emily: exercise / expected response</option>
+                <option value="265">04:25 · Idan: elevated resting vitals</option>
+                <option value="355">05:55 · Sofia: temperature review</option>
+                <option value="435">07:15 · Camila: EEG signal lost</option>
+                <option value="530">08:50 · Crew recovered</option>
+              </select>
+              <button id="hal-quick-downlink" class="eng-btn" type="button" title="Queue telemetry snapshot to Earth link">📡 Send Packet</button>
+            </div>
+          </div>
+
+          <!-- 6 TEAM CREW AVATAR GLANCE TILES -->
+          <div id="crew-glance-grid" class="crew-glance-grid"></div>
+        </div>
+
+        <!-- TOP-RIGHT EXECUTIVE COLUMN: BROADER STATION READINESS + COMPACT CREW NOTIFICATIONS -->
+        <aside class="glance-right-col" aria-label="Station Readiness and Crew Alerts">
+          <div class="sub-glass overview-board">
+            <div class="sub-head">
+              <span>Station Readiness</span>
+              <span id="ov-station-pill" class="triage-pill pill-warning">WATCH · LIVE AVG</span>
+            </div>
+            <div class="overview-donut-row">
+              <div class="donut-wrap donut-wrap-lg">
+                <svg class="donut-svg" viewBox="0 0 100 100">
+                  <circle class="donut-bg" cx="50" cy="50" r="40" />
+                  <circle id="station-donut-arc" class="donut-fg" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="40" />
+                </svg>
+                <div class="donut-center">
+                  <strong id="station-avg-score">74%</strong>
+                  <span>CREW OK</span>
+                </div>
+              </div>
+              <div class="overview-stats">
+                <div class="ov-stat"><span class="ov-dot dot-nominal"></span><span id="ov-nom-count">1 All Good</span></div>
+                <div class="ov-stat"><span class="ov-dot dot-warning"></span><span id="ov-warn-count">2 Attention</span></div>
+                <div class="ov-stat"><span class="ov-dot dot-critical"></span><span id="ov-crit-count">1 Urgent</span></div>
+              </div>
+            </div>
+
+            <div class="ov-sys-grid">
+              <div class="ov-sys-tile">
+                <span class="ov-sys-lbl">Cabin Air · CO2</span>
+                <strong id="ov-cabin-val" class="ov-sys-val">-- ppm · -- °C</strong>
+              </div>
+              <div class="ov-sys-tile">
+                <span class="ov-sys-lbl">Radiation Avg</span>
+                <strong id="ov-rad-val" class="ov-sys-val">-- mSv/d</strong>
+              </div>
+              <div class="ov-sys-tile">
+                <span class="ov-sys-lbl">Wearable Net</span>
+                <strong id="ov-sensors-val" class="ov-sys-val">-- / 42</strong>
+              </div>
+            </div>
+
+            <div id="ov-focus-box" class="ov-focus-box">
+              <span id="ov-priority-note" class="ov-priority-note">Station systems nominal · All telemetry channels synced.</span>
+              <div class="ov-actions-row">
+                <button id="btn-ov-top-priority" class="mini-link-btn" type="button">Focus Lowest Crew →</button>
+                <button id="btn-glance-radlab" class="mini-link-btn" type="button">RadLab &amp; Standards →</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-glass notif-board">
+            <div class="sub-head">
+              <span>Crew Notifications</span>
+              <span id="notif-summary-tag" class="sub-hint">Tap to act</span>
+            </div>
+            <div id="notif-list" class="notif-list"></div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- ==================== LEVEL 2: ASTRONAUT BODY & INTERVENTION POP-UP ==================== -->
+      <section id="view-simple" class="hud-layout hidden" aria-label="Astronaut Body Action HUD">
+        <!-- Mini 1-click 6-crew bar to hop between astronauts inside Level 2 -->
+        <div class="level2-crew-bar" id="level2-crew-bar">
+          <button class="crew-chip active" data-crew="idan"><img src="/static/assets/portraits/idan.png" alt="Idan" /><span>Idan</span><i class="dot-sm dot-nominal" id="l2-dot-idan"></i></button>
+          <button class="crew-chip" data-crew="itay"><img src="/static/assets/portraits/itay.png" alt="Itay" /><span>Itay</span><i class="dot-sm dot-nominal" id="l2-dot-itay"></i></button>
+          <button class="crew-chip" data-crew="anton"><img src="/static/assets/portraits/anton.png" alt="Anton" /><span>Anton</span><i class="dot-sm dot-critical" id="l2-dot-anton"></i></button>
+          <button class="crew-chip" data-crew="emily"><img src="/static/assets/portraits/emily.png" alt="Emily" /><span>Emily</span><i class="dot-sm dot-nominal" id="l2-dot-emily"></i></button>
+          <button class="crew-chip" data-crew="sofia"><img src="/static/assets/portraits/sofia.png" alt="Sofia" /><span>Sofia</span><i class="dot-sm dot-nominal" id="l2-dot-sofia"></i></button>
+          <button class="crew-chip" data-crew="camila"><img src="/static/assets/portraits/camila.png" alt="Camila" /><span>Camila</span><i class="dot-sm dot-nominal" id="l2-dot-camila"></i></button>
+        </div>
+
+        <div class="view-mode-bar mode-bar">
+          <div class="view-mode-left">
+            <div class="mode-switch" role="group" aria-label="Crew Detail Mode">
+              <button id="body-mode-simple" class="mode-btn active" type="button">✓ Everything To Do</button>
+              <button id="body-mode-map" class="mode-btn" type="button">🧍 Body &amp; Radiation Map</button>
+            </div>
+            <span id="body-mode-crew" class="sub-hint"></span>
+          </div>
+          <span class="sub-hint">20-min Earth delay · Everything this crew member needs to do</span>
+        </div>
+
+        <div id="crew-simple-pane" class="simple-pane simple-action-pane">
+          <div id="csa-hero-card" class="sub-glass simple-hero-card card-nominal">
+            <div class="csa-hero-top">
+              <div class="csa-identity">
+                <img id="csa-avatar" class="csa-avatar" src="/static/assets/portraits/anton.png" alt="Active Crew Portrait" />
+                <div class="csa-title-col">
+                  <h2 id="csa-name" class="csa-name">Anton</h2>
+                  <div id="csa-meta" class="csa-meta"></div>
+                </div>
+              </div>
+              <div class="csa-badges">
+                <span id="csa-activity" class="gc-activity-pill">Rest</span>
+                <div id="csa-score-pill" class="gc-score-pill">--</div>
+                <span id="csa-status-pill" class="triage-pill pill-nominal">GREEN · ALL GOOD</span>
+              </div>
+            </div>
+
+            <div id="csa-headline" class="zone-headline"></div>
+            <p id="csa-plain-summary" class="zone-summary"></p>
+
+            <div class="simple-kpi-row">
+              <div class="simple-kpi-tile">
+                <span class="simple-kpi-label">Pulse &amp; Oxygen</span>
+                <strong id="csa-kpi-cardio" class="simple-kpi-val">--</strong>
+              </div>
+              <div class="simple-kpi-tile">
+                <span class="simple-kpi-label">Air &amp; Sleep</span>
+                <strong id="csa-kpi-env" class="simple-kpi-val">--</strong>
+              </div>
+              <div class="simple-kpi-tile">
+                <span class="simple-kpi-label">Daily Radiation</span>
+                <strong id="csa-kpi-rad" class="simple-kpi-val">--</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-glass simple-checklist-card">
+            <div class="sub-head">
+              <span>EVERYTHING TO DO RIGHT NOW</span>
+              <span id="csa-task-count" class="sub-hint"></span>
+            </div>
+            <div id="crew-all-tasks-list" class="crew-tasks-stack"></div>
+            <div class="simple-footer-actions">
+              <button id="csa-do-all-btn" class="btn-glass-pri" type="button">Do Top Priority Action</button>
+              <button id="csa-open-map-btn" class="btn-glass-sec" type="button">Open Body &amp; Radiation Map →</button>
+              <button id="csa-open-heart-btn" class="mini-link-btn" type="button">Heart Lab →</button>
+              <button id="csa-open-rad-btn" class="mini-link-btn" type="button">RadLab →</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="body-split-grid" class="body-split-grid hidden">
+          <!-- LEFT: ASTRONAUT FULL BODY + ON-IMAGE POP-UP + GLOWING RED HALO -->
+          <div id="avatar-stage" class="avatar-stage sub-glass state-nominal">
+            <div class="stage-bg-ring" aria-hidden="true"></div>
+
+            <div id="hero-popup" class="hero-popup popup-nominal" role="status" aria-live="polite">
+              <div class="hero-crew-badge">
+                <img id="hero-crew-avatar" src="/static/assets/portraits/anton.png" alt="Active Astronaut" />
+                <span class="popup-indicator" id="hero-popup-icon"></span>
+              </div>
+              <div class="popup-body">
+                <div class="popup-title" id="hero-popup-title">GREEN — ALL GOOD</div>
+                <div class="popup-sub" id="hero-popup-sub">All 5 systems nominal · Readiness 92/100</div>
+              </div>
+              <button id="hero-jump-btn" class="popup-jump hidden" type="button">Jump to Issue</button>
+            </div>
+
+            <div id="dosimeter-popup" class="dosimeter-popup hidden">
+              PERSONAL DOSIMETER OFFLINE — ESTIMATED FROM CABIN SENSORS
+            </div>
+
+            <div class="astronaut-wrap">
+              <img id="astronaut-img" src="/static/assets/astronaut_body.png" alt="Astronaut Body Scanner" class="astronaut-img" />
+              <div class="visor-dome" aria-hidden="true"></div>
+
+              <div id="zone-float-popup" class="zone-float-popup float-nominal">
+                <div class="float-text-col">
+                  <span class="float-badge" id="float-badge">TORSO · ALL GOOD</span>
+                  <span class="float-label" id="float-label">0.446 mSv/d · Safe limit</span>
+                </div>
+              </div>
+
+              <button class="body-hotspot active-zone" data-zone="head" style="left: 50%; top: 5.4%;" aria-label="Head: Sleep">
+                <span class="hs-ring"></span><span class="hs-core"></span><span class="hs-tag hs-right">Head · Sleep</span>
+              </button>
+              <button class="body-hotspot" data-zone="lungs" style="left: 38.5%; top: 27.5%;" aria-label="Lungs: Cabin Air">
+                <span class="hs-ring"></span><span class="hs-core"></span><span class="hs-tag hs-left">Lungs · Air</span>
+              </button>
+              <button class="body-hotspot" data-zone="heart" style="left: 59.5%; top: 31%;" aria-label="Heart: Cardio Vitals">
+                <span class="hs-ring"></span><span class="hs-core"></span><span class="hs-tag hs-right">Heart · Vitals</span>
+              </button>
+              <button class="body-hotspot" data-zone="torso" style="left: 50%; top: 45%;" aria-label="Torso: Radiation">
+                <span class="hs-ring"></span><span class="hs-core"></span><span class="hs-tag hs-left">Torso · Radiation</span>
+              </button>
+              <button class="body-hotspot" data-zone="limbs" style="left: 61.5%; top: 61%;" aria-label="Limbs: Strength">
+                <span class="hs-ring"></span><span class="hs-core"></span><span class="hs-tag hs-right">Limbs · Strength</span>
+              </button>
+            </div>
+
+            <div id="mobile-float-bar" class="mobile-float-bar float-nominal">
+              <div class="float-text-col">
+                <span class="float-badge" id="mfloat-badge">ALL GOOD</span>
+                <span class="float-label" id="mfloat-label">0.446 mSv/d · Safe limit</span>
+              </div>
+              <button id="zone-float-mobile-cta" class="float-mobile-cta" type="button">Steps ↓</button>
+            </div>
+
+            <div class="stage-footer">
+              <span>READINESS: <strong id="stage-score-val">92</strong>/100</span>
+              <span>·</span>
+              <span>TAP A BODY MARKER TO INSPECT</span>
+            </div>
+          </div>
+
+          <!-- RIGHT: FOCUSED INTERVENTION ACTION CARD (CALM & CONCISE) -->
+          <aside class="prescription-col">
+            <div id="action-glass-card" class="sub-glass action-panel card-nominal">
+              <div class="card-top-row">
+                <span id="zone-kicker" class="zone-kicker">04 · TORSO / RADIATION</span>
+                <span id="zone-status-pill" class="triage-pill pill-nominal">GREEN · ALL GOOD</span>
+              </div>
+
+              <h2 id="zone-headline" class="zone-headline">Normal orbital radiation</h2>
+              <p id="zone-summary" class="zone-summary">Daily radiation dose is safely within NASA limits.</p>
+
+              <div class="todo-box" id="todo-box">
+                <div class="todo-label">WHAT TO DO RIGHT NOW</div>
+                <div id="zone-action-title" class="todo-title">Optional: Move 4h to Destiny Lab</div>
+                <p id="zone-action-detail" class="todo-detail">Slightly lowers daily dose without disrupting work.</p>
+                <div id="zone-preview-banner" class="preview-banner hidden"></div>
+                <div class="todo-actions">
+                  <button id="btn-zone-preview" class="btn-glass-sec" type="button">Preview Move</button>
+                  <button id="btn-zone-apply" class="btn-glass-pri" type="button">Move &amp; Log Shelter</button>
+                </div>
+                <div id="zone-quick-tools" class="zone-quick-tools hidden">
+                  <button id="btn-l2-pvt" class="mini-link-btn" type="button">⏱ 3-Min PVT Check →</button>
+                  <button id="btn-l2-sans" class="mini-link-btn" type="button">👁 Near-Vision (SANS) →</button>
+                  <button id="btn-l2-sensors" class="mini-link-btn" type="button">📡 Inspect Sensors →</button>
+                </div>
+              </div>
+
+              <!-- Contextual Torso Shielding OR Heart ECG sparkline -->
+              <div id="shelter-mini-card" class="shelter-mini">
+                <div class="shelter-mini-head">
+                  <span>SHIELDING PROTECTION (LONGER = SAFER)</span>
+                  <button id="btn-open-rad-from-l2" class="mini-link-btn" type="button">Full RadLab →</button>
+                </div>
+                <div id="shelter-mini-bars" class="shelter-mini-bars"></div>
+              </div>
+
+              <div id="heart-mini-card" class="heart-mini hidden">
+                <div class="shelter-mini-head">
+                  <span>ASTROSKIN LIVE ECG + HRV</span>
+                  <button id="btn-open-cardio-lab" class="mini-link-btn" type="button">Full Heart &amp; ECG →</button>
+                </div>
+                <div class="heart-mini-kpis">
+                  <div class="hm-kpi"><span class="hm-lbl">MEAN HR</span><strong id="hm-hr">-- bpm</strong></div>
+                  <div class="hm-kpi"><span class="hm-lbl">RMSSD</span><strong id="hm-rmssd">-- ms</strong></div>
+                  <div class="hm-kpi"><span class="hm-lbl">QTcF</span><strong id="hm-qtcf">-- ms</strong></div>
+                  <div class="hm-kpi"><span class="hm-lbl">SpO2 MIN</span><strong id="hm-spo2">--%</strong></div>
+                </div>
+                <div class="heart-spark-wrap">
+                  <canvas id="heartMiniChart"></canvas>
+                </div>
+              </div>
+
+              <!-- Clean compact 5-zone pill switcher inside action card -->
+              <div class="zone-pill-strip" id="body-dock-list"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ==================== LEVEL 3A: HEART & ECG DETAILED LAB ==================== -->
+      <section id="view-cardio" class="hidden" aria-label="Heart Rate, ECG and Autonomic Detailed Telemetry">
+        <div class="view-mode-bar">
+          <div class="view-mode-left">
+            <div class="mode-switch" role="group" aria-label="Heart View Mode">
+              <button id="cardio-mode-simple" class="mode-btn active" type="button">Crew Action</button>
+              <button id="cardio-mode-eng" class="mode-btn" type="button">In-Depth / Engineer</button>
+            </div>
+            <span id="cardio-mode-crew" class="sub-hint"></span>
+          </div>
+          <span class="sub-hint">20-min Earth delay · Autonomous Crew Guidance</span>
+        </div>
+
+        <div id="cardio-simple-pane" class="simple-action-pane">
+          <div id="cs-hero-card" class="sub-glass simple-hero-card card-nominal">
+            <div class="simple-card-top">
+              <span class="zone-kicker">HEART &amp; ENERGY · CREW ACTION</span>
+              <span id="cs-status-pill" class="triage-pill pill-nominal">GREEN · CLEAR FOR DUTY</span>
+            </div>
+            <h2 id="cs-headline" class="simple-headline">Heart &amp; oxygen steady</h2>
+            <p id="cs-plain-summary" class="simple-summary">Loading crew heart guidance...</p>
+
+            <div class="simple-kpi-row">
+              <div class="simple-kpi-tile">
+                <span class="simple-kpi-label">Heart Rate (Pulse)</span>
+                <strong id="cs-hr-plain" class="simple-kpi-val">-- bpm</strong>
+              </div>
+              <div class="simple-kpi-tile">
+                <span class="simple-kpi-label">Stress &amp; Recovery</span>
+                <strong id="cs-recovery-plain" class="simple-kpi-val">--</strong>
+              </div>
+              <div class="simple-kpi-tile">
+                <span class="simple-kpi-label">Blood Oxygen</span>
+                <strong id="cs-o2-plain" class="simple-kpi-val">--%</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-glass simple-checklist-card">
+            <div class="sub-head">
+              <span>What To Do Right Now</span>
+              <span class="sub-hint">Tap steps as completed · No Earth wait needed</span>
+            </div>
+            <div id="cs-actions-list" class="action-checklist"></div>
+            <div class="simple-footer-actions">
+              <button id="cs-apply-primary-btn" class="btn-glass-pri" type="button">Do Priority Action</button>
+              <button id="cs-open-deep-btn" class="btn-glass-sec" type="button">Open In-Depth ECG &amp; Engineer Data →</button>
+              <span class="simple-deep-hint">Need waveforms or Earth-log numbers? Open In-Depth</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="cardio-eng-pane" class="hidden">
+        <div class="sub-glass eng-toolbar">
+          <div class="eng-group">
+            <span class="zone-kicker">PHYSIONET STREAM</span>
+            <div class="preset-btns" id="cardio-record-btns">
+              <button class="eng-btn active" data-record="ptt_s3_sit">Healthy (PTT)</button>
+              <button class="eng-btn" data-record="bidmc_19">Low HRV / QTcF (#19)</button>
+              <button class="eng-btn" data-record="bidmc_12">Hypoxemia (#12)</button>
+              <button class="eng-btn" data-record="bidmc_17">Ectopy (#17)</button>
+              <button class="eng-btn" data-record="bidmc_16">Tachycardia (#16)</button>
+            </div>
+          </div>
+
+          <div class="eng-group eng-params">
+            <label class="eng-field">
+              <span>Atmosphere</span>
+              <select id="cardio-atmo-select" class="eng-select">
+                <option value="iss_nominal">ISS Nominal (14.7 psi)</option>
+                <option value="exploration_8_2">Exploration EVA (8.2 psi)</option>
+              </select>
+            </label>
+            <label class="eng-field">
+              <span>ppCO2 (mmHg)</span>
+              <input id="cardio-ppco2" class="eng-input" type="number" min="0.5" max="8.0" step="0.1" value="1.9" />
+            </label>
+          </div>
+        </div>
+
+        <div class="sub-glass eng-hero-strip cardio-kpi-strip">
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">MEAN HEART RATE</div>
+            <div id="ckpi-hr" class="kpi-cell-val">-- bpm</div>
+            <div id="ckpi-hr-sub" class="kpi-cell-sub">Astroskin ECG</div>
+          </div>
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">HRV (RMSSD / SDNN)</div>
+            <div id="ckpi-hrv" class="kpi-cell-val">-- / -- ms</div>
+            <div id="ckpi-hrv-sub" class="kpi-cell-sub">Vagal &amp; PRSA DC</div>
+          </div>
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">REPOLARIZATION (QTcF)</div>
+            <div id="ckpi-qtcf" class="kpi-cell-val">-- ms</div>
+            <div id="ckpi-qtcf-sub" class="kpi-cell-sub">NASA &lt; 450 ms</div>
+          </div>
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">CARDIO SCORE</div>
+            <div id="ckpi-score" class="kpi-cell-val">-- / 100</div>
+            <div id="ckpi-score-sub" class="kpi-cell-sub">Pre-event warning</div>
+          </div>
+        </div>
+
+        <div class="eng-bench">
+          <div class="sub-glass">
+            <div class="panel-head">
+              <h2 class="panel-title"><span id="cardio-record-title">Healthy Baseline</span> — ECG &amp; PPG</h2>
+              <span id="cardio-status-badge" class="triage-pill pill-nominal">NOMINAL</span>
+            </div>
+            <div class="chart-box"><canvas id="cardioWaveChart"></canvas></div>
+            <div id="cardio-scenario-note" class="alara-note">Loading Astroskin waveform telemetry...</div>
+          </div>
+
+          <div class="sub-glass">
+            <div class="panel-head">
+              <h2 class="panel-title">Rolling Pre-Event Risk &amp; HRV Drift</h2>
+              <span id="cardio-lead-tag" class="triage-pill pill-nominal">LEAD II · 250 HZ</span>
+            </div>
+            <div class="chart-box"><canvas id="cardioTrendChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="eng-bottom">
+          <div class="sub-glass">
+            <div class="panel-head"><h2 class="panel-title">4-Axis Autonomic, Electrical, Vascular &amp; Hypoxic Telemetry</h2></div>
+            <table>
+              <thead>
+                <tr><th>Biomarker / Axis</th><th>Measured</th><th>NASA Bound</th><th>Axis Risk</th></tr>
+              </thead>
+              <tbody id="cardio-metrics-tbody"></tbody>
+            </table>
+          </div>
+          <div class="sub-glass">
+            <div class="panel-head"><h2 class="panel-title">Early-Warning Signals &amp; Actions</h2></div>
+            <div id="cardio-alerts-panel" class="cardio-alerts-panel"></div>
+          </div>
+        </div>
+
+        <!-- HAL2030 LIVE REPLAY MULTI-CHANNEL TRACES (WITH HONEST SIGNAL-LOSS GAPS) -->
+        <div class="sub-glass hal-wave-panel">
+          <div class="panel-head">
+            <h2 class="panel-title">HAL2030 10-Min Replay Multi-Channel Waveforms — <span id="hal-wave-crew-lbl">Anton</span></h2>
+            <span id="hal-wave-meta-pill" class="triage-pill pill-nominal">ECG · RESP · EEG (SIMULATED)</span>
+          </div>
+          <div class="chart-box chart-box-sm"><canvas id="halWaveChart"></canvas></div>
+          <div id="hal-wave-metrics" class="alara-note">Illustrative ECG, Respiration &amp; EEG traces from 10-min recording. Disconnected channels render as blank gaps (never interpolated).</div>
+        </div>
+        </div>
+      </section>
+
+      <!-- ==================== LEVEL 3B: RADIATION LAB ==================== -->
+      <section id="view-engineer" class="hidden" aria-label="Radiation Engineering Workbench">
+        <div class="view-mode-bar">
+          <div class="view-mode-left">
+            <div class="mode-switch" role="group" aria-label="Radiation View Mode">
+              <button id="rad-mode-simple" class="mode-btn active" type="button">Crew Action</button>
+              <button id="rad-mode-eng" class="mode-btn" type="button">In-Depth / Engineer</button>
+            </div>
+            <span id="rad-mode-crew" class="sub-hint"></span>
+          </div>
+          <span class="sub-hint">20-min Earth delay · Autonomous Shelter Plan</span>
+        </div>
+
+        <div id="rad-simple-pane" class="simple-action-pane">
+          <div id="rs-hero-card" class="sub-glass simple-hero-card card-nominal">
+            <div class="simple-card-top">
+              <span class="zone-kicker">RADIATION &amp; SHIELDING · CREW ACTION</span>
+              <span id="rs-status-pill" class="triage-pill pill-nominal">GREEN · WELL SHIELDED</span>
+            </div>
+            <h2 id="rs-headline" class="simple-headline">Daily shielding is safe</h2>
+            <p id="rs-plain-summary" class="simple-summary">Loading module shielding guidance...</p>
+          </div>
+
+          <div class="simple-rad-grid">
+            <div class="sub-glass simple-checklist-card">
+              <div class="sub-head">
+                <span>Radiation Action Steps</span>
+                <span class="sub-hint">No Earth wait needed</span>
+              </div>
+              <div id="rs-actions-list" class="action-checklist"></div>
+              <div class="simple-footer-actions">
+                <button id="rs-apply-move-btn" class="btn-glass-pri" type="button">Move to Shielded Core Now</button>
+                <button id="rs-open-deep-btn" class="btn-glass-sec" type="button">Open In-Depth RadLab &amp; Standards →</button>
+                <span class="simple-deep-hint">Need sliders or Earth-log numbers? Open In-Depth</span>
+              </div>
+            </div>
+
+            <div class="sub-glass simple-guide-card">
+              <div class="sub-head">
+                <span>Module Safety Guide</span>
+                <span class="sub-hint">Safest vs. outer modules</span>
+              </div>
+              <div id="rs-shelter-guide" class="shelter-mini-bars"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="rad-eng-pane" class="hidden">
+        <div class="sub-glass eng-toolbar">
+          <div class="eng-group">
+            <span class="zone-kicker">SCHEDULE PRESETS</span>
+            <div class="preset-btns">
+              <button id="btn-preset-nominal" class="eng-btn active">Nominal Shift</button>
+              <button id="btn-preset-high" class="eng-btn">High-Flux</button>
+              <button id="btn-preset-alara" class="eng-btn">ALARA Destiny</button>
+            </div>
+          </div>
+          <div class="eng-group eng-params">
+            <label class="eng-field"><span>Days</span><input id="input-days" class="eng-input" type="number" min="1" max="365" value="30" /></label>
+            <label class="eng-field"><span>Prior Career (mSv)</span><input id="input-career" class="eng-input" type="number" min="0" max="590" value="120" /></label>
+          </div>
+        </div>
+
+        <div class="sub-glass eng-hero-strip">
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">CABIN-TRACKED DOSE</div>
+            <div id="kpi-cabin-daily" class="kpi-cell-val">-- mSv/d</div>
+            <div class="kpi-cell-sub">Time-weighted RadLab</div>
+          </div>
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">VESSEL-AVG ESTIMATE</div>
+            <div id="kpi-vessel-daily" class="kpi-cell-val">-- mSv/d</div>
+            <div class="kpi-cell-sub">Uniform-station assumption</div>
+          </div>
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">TRACKING DELTA</div>
+            <div id="kpi-delta" class="kpi-cell-val">--%</div>
+            <div class="kpi-cell-sub">Module variance</div>
+          </div>
+          <div class="eng-hero-cell">
+            <div class="kpi-cell-label">CAREER DOSE (600 mSv)</div>
+            <div id="kpi-career" class="kpi-cell-val">--%</div>
+            <div id="kpi-career-sub" class="kpi-cell-sub">-- / 600 mSv</div>
+          </div>
+        </div>
+
+        <div class="eng-bench">
+          <div class="sub-glass">
+            <div class="panel-head">
+              <h2 class="panel-title"><span id="eng-crew-owner">Anton</span> — 24h Schedule</h2>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span id="eng-hours-total" class="triage-pill pill-nominal">TOTAL: 24/24H</span>
+                <button id="btn-normalize-24h" class="eng-btn-mini hidden">Normalize 24h</button>
+              </div>
+            </div>
+            <div id="eng-hours-warn" class="hours-warn hidden">Hours differ from 24h — normalized to a 24h orbital day.</div>
+            <div id="sliders-container" class="slider-list"></div>
+            <div id="alara-guidance" class="alara-note">Loading ALARA analysis...</div>
+          </div>
+
+          <div class="sub-glass">
+            <div class="panel-head">
+              <h2 class="panel-title">24h Cumulative Dose Curve</h2>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span id="eng-dosimeter-tag" class="triage-pill pill-nominal">MEASURED</span>
+                <span id="rad-status-badge" class="triage-pill pill-nominal">NOMINAL</span>
+              </div>
+            </div>
+            <div class="chart-box"><canvas id="cumulativeChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="eng-bottom">
+          <div class="sub-glass">
+            <div class="panel-head"><h2 class="panel-title">NASA-STD-3001 Compliance Matrix</h2></div>
+            <table>
+              <thead><tr><th>Standard / Organ</th><th>30-Day Limit</th><th>Career / Event</th><th>Projection</th></tr></thead>
+              <tbody id="standards-tbody"></tbody>
+            </table>
+          </div>
+          <div class="sub-glass">
+            <div class="panel-head"><h2 class="panel-title">RadLab 23-Day Module History</h2></div>
+            <div class="chart-box chart-box-sm"><canvas id="remHistoryChart"></canvas></div>
+          </div>
+        </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: SENSORS & STARTER GUIDE FIELD CHECKS ==================== -->
+      <section id="view-sensors" class="hidden" aria-label="Wearable Sensor Network and Field Checks">
+        <div class="view-mode-bar mode-bar">
+          <div class="view-mode-left">
+            <div class="mode-switch" role="group" aria-label="Sensors Detail Depth">
+              <button id="sensors-mode-quick" class="mode-btn active" type="button">⚡ Quick Field Checks</button>
+              <button id="sensors-mode-depth" class="mode-btn" type="button">🔬 In-Depth (42 Channels)</button>
+            </div>
+            <span class="sub-hint">Run starter checks in 1 tap or inspect every wearable signal</span>
+          </div>
+          <div class="eng-group">
+            <span id="sensor-online-pill" class="triage-pill pill-nominal">-- / 42 ONLINE</span>
+            <span id="sensor-missing-pill" class="triage-pill pill-warning">0 NO SIGNAL</span>
+            <span id="sensor-critical-pill" class="triage-pill pill-critical">0 CRITICAL</span>
+          </div>
+        </div>
+
+        <div id="sensors-toolbar-row" class="sub-glass eng-toolbar hidden">
+          <div class="eng-group">
+            <span class="zone-kicker">SENSOR FILTER</span>
+            <select id="sensor-crew-filter" class="eng-select">
+              <option value="all">All 6 Crew Members</option>
+              <option value="idan">Idan</option>
+              <option value="itay">Itay</option>
+              <option value="anton">Anton</option>
+              <option value="emily">Emily Carter</option>
+              <option value="sofia">Sofia Almeida</option>
+              <option value="camila">Camila Santos</option>
+            </select>
+            <select id="sensor-state-filter" class="eng-select">
+              <option value="all">All States (42)</option>
+              <option value="warning">Attention / No Signal</option>
+              <option value="critical">Critical Readings</option>
+              <option value="nominal">Online / Nominal</option>
+            </select>
+          </div>
+          <span class="sub-hint">Tap any row below to inspect that crew member</span>
+        </div>
+
+        <!-- STARTER GUIDE 3 INTERACTIVE ONBOARD SELF-CHECKS -->
+        <div class="starter-checks-grid">
+          <!-- 1. Mission-Aware 3-Min PVT Vigilance Check -->
+          <div class="sub-glass check-card">
+            <div class="panel-head">
+              <div>
+                <span class="zone-kicker">STARTER CHECK 01 · COGNITION</span>
+                <h2 class="panel-title">3-Min PVT Reaction Check</h2>
+              </div>
+              <span id="pvt-status-pill" class="triage-pill pill-nominal">READY</span>
+            </div>
+            <p class="check-desc">Mission-aware reaction check after short sleep or high CO2. Tap as soon as the optical ring turns emerald.</p>
+            <div class="pvt-stage">
+              <button id="pvt-stim-btn" class="pvt-stim-btn pvt-idle" type="button">
+                <span id="pvt-stim-label">TAP TO START 5-TRIAL CHECK</span>
+                <small id="pvt-stim-sub">Nominal baseline &lt; 280 ms · Auto-logs to crew fatigue</small>
+              </button>
+            </div>
+            <div class="check-stats-row">
+              <span>Mean RT: <strong id="pvt-mean-ms">-- ms</strong></span>
+              <span>Trials: <strong id="pvt-trial-count">0 / 5</strong></span>
+              <button id="pvt-reset-btn" class="mini-link-btn" type="button">Reset</button>
+            </div>
+          </div>
+
+          <!-- 2. Calibrated Self-Administered Near-Vision (SANS) Exam + Lightweight CPU Voice -->
+          <div class="sub-glass check-card sans-vision-card" id="sans-vision-card">
+            <div class="panel-head">
+              <div>
+                <span class="zone-kicker">STARTER CHECK 02 · OPTICS (SANS)</span>
+                <h2 class="panel-title">Calibrated Near-Vision Check</h2>
+              </div>
+              <span id="sans-status-pill" class="triage-pill pill-nominal">CALIBRATION</span>
+            </div>
+
+            <div class="sans-voice-strip">
+              <div class="sans-voice-meta">
+                <span id="sans-voice-dot" class="voice-dot voice-off"></span>
+                <span id="sans-voice-state" class="sans-voice-label">Voice off · Touch &amp; keys active</span>
+              </div>
+              <div class="sans-voice-btns">
+                <button id="sans-voice-mic-btn" class="eng-btn" type="button">🎙 Mic Command</button>
+                <button id="sans-voice-mute-btn" class="eng-btn active" type="button">🔊 Voice: ON</button>
+              </div>
+            </div>
+
+            <div id="sans-stage-setup" class="sans-stage">
+              <div class="sans-setup-row">
+                <label class="sans-select-wrap">
+                  <span>Reason / Symptom</span>
+                  <select id="sans-symptom-select" class="eng-select">
+                    <option value="Routine scheduled check">Routine scheduled check</option>
+                    <option value="Near text feels slightly blurry">Near text feels blurry</option>
+                    <option value="Headache or eye strain">Headache or eye strain</option>
+                  </select>
+                </label>
+                <label class="sans-select-wrap">
+                  <span>Cabin Lighting</span>
+                  <select id="sans-lighting-select" class="eng-select">
+                    <option value="Nominal cabin">Nominal cabin</option>
+                    <option value="Bright daylight">Bright daylight</option>
+                    <option value="Dim sleep shift">Dim sleep shift</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="sans-canvas-frame">
+                <canvas id="sans-cal-canvas" width="440" height="118"></canvas>
+              </div>
+
+              <div class="sans-cal-sliders">
+                <label class="sans-cal-field">
+                  <span>50 mm Horiz. Scale (<strong id="sans-cal-x-val">4.0</strong> px/mm)</span>
+                  <input id="sans-cal-x" type="range" min="2.2" max="8.0" step="0.1" value="4.0" />
+                </label>
+                <label class="sans-cal-field">
+                  <span>50 mm Vert. Scale (<strong id="sans-cal-y-val">4.0</strong> px/mm)</span>
+                  <input id="sans-cal-y" type="range" min="2.2" max="8.0" step="0.1" value="4.0" />
+                </label>
+              </div>
+
+              <div class="sans-setup-footer">
+                <label class="sans-dist-check">
+                  <input id="sans-dist-confirm" type="checkbox" checked />
+                  <span>Viewing distance confirmed at <strong>40 cm</strong></span>
+                </label>
+                <button id="sans-start-btn" class="btn-glass-pri" type="button">Calibrate &amp; Start Eye Check →</button>
+              </div>
+            </div>
+
+            <div id="sans-stage-test" class="sans-stage hidden">
+              <div class="sans-test-head">
+                <span id="sans-eye-pill" class="triage-pill pill-warning">PRACTICE · RIGHT EYE</span>
+                <span id="sans-level-pill" class="sub-hint">Warm-up (unscored)</span>
+              </div>
+              <div id="sans-guidance-text" class="sans-guidance">Identify which way the E legs point (Practice 1 / 4).</div>
+              <div class="sans-canvas-frame sans-e-frame">
+                <canvas id="sans-e-canvas" width="440" height="205"></canvas>
+              </div>
+              <div id="sans-pending-bar" class="sans-pending-bar hidden">
+                <span id="sans-pending-text">Pending: RIGHT</span>
+                <button id="sans-btn-confirm" class="btn-glass-pri" type="button">Continue (Confirm)</button>
+              </div>
+              <div class="sans-pad-grid">
+                <button id="sans-btn-up" class="eng-btn sans-dir-btn" type="button">↑ Up</button>
+                <button id="sans-btn-left" class="eng-btn sans-dir-btn" type="button">← Left</button>
+                <button id="sans-btn-right" class="eng-btn sans-dir-btn" type="button">→ Right</button>
+                <button id="sans-btn-down" class="eng-btn sans-dir-btn" type="button">↓ Down</button>
+                <button id="sans-btn-unable" class="eng-btn" type="button">Unable</button>
+                <button id="sans-btn-repeat" class="eng-btn" type="button">🔊 Repeat</button>
+                <button id="sans-btn-back" class="eng-btn" type="button">↩ Back</button>
+                <button id="sans-btn-abort" class="mini-link-btn" type="button">Cancel</button>
+              </div>
+            </div>
+
+            <div id="sans-stage-summary" class="sans-stage hidden">
+              <div class="simple-kpi-row">
+                <div class="simple-kpi-tile"><span>RIGHT EYE (OD)</span><strong id="sans-res-right">--</strong></div>
+                <div class="simple-kpi-tile"><span>LEFT EYE (OS)</span><strong id="sans-res-left">--</strong></div>
+                <div class="simple-kpi-tile"><span>SIM. BASELINE</span><strong>0.00 logMAR</strong></div>
+              </div>
+              <p id="sans-summary-note" class="check-desc">Demo near-vision check complete. Simulated baseline shown for reference only.</p>
+              <div class="sans-setup-footer">
+                <button id="sans-retest-btn" class="btn-glass-sec" type="button">Repeat Test</button>
+                <button id="sans-queue-report-btn" class="btn-glass-pri" type="button">Save &amp; Queue Report →</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Cabin CO2 Hatch & Ventilation Event Trace -->
+          <div class="sub-glass check-card">
+            <div class="panel-head">
+              <div>
+                <span class="zone-kicker">STARTER CHECK 03 · ECLSS</span>
+                <h2 class="panel-title">Cabin CO2 &amp; Hatch Trace</h2>
+              </div>
+              <button id="co2-hatch-toggle-btn" class="eng-btn" type="button">Simulate Hatch Spike</button>
+            </div>
+            <p class="check-desc">Tracks cabin CO2 around hatch transfers &amp; scrubber cycles. Above threshold triggers crew-wide alert.</p>
+            <div class="chart-box chart-box-xs"><canvas id="co2HatchChart"></canvas></div>
+            <div class="check-stats-row">
+              <span>Live CO2: <strong id="sensor-co2-now">-- ppm</strong></span>
+              <span>Cabin Temp: <strong id="sensor-temp-now">-- °C</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 42-CHANNEL WEARABLE SENSOR REGISTRY (SHOWN IN IN-DEPTH MODE) -->
+        <div id="sensor-matrix-card" class="sub-glass hidden">
+          <div class="panel-head">
+            <h2 class="panel-title">42-Channel Crew Wearable Sensor Matrix (6 Crew × 7 Sensors)</h2>
+            <span class="sub-hint">Tap any row to open astronaut Body Action HUD · Missing channels show “—” (never faked)</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Astronaut</th>
+                  <th>Sensor / Channel</th>
+                  <th>Placement</th>
+                  <th>Latest Reading</th>
+                  <th>State</th>
+                  <th>Quality</th>
+                  <th>Battery</th>
+                </tr>
+              </thead>
+              <tbody id="sensor-matrix-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: MISSION CONTROL DOWNLINK QUEUE ==================== -->
+      <section id="view-downlink" class="hidden" aria-label="Mission Control Store and Forward Downlink">
+        <div class="view-mode-bar mode-bar">
+          <div class="view-mode-left">
+            <div class="mode-switch" role="group" aria-label="Downlink Detail Depth">
+              <button id="downlink-mode-quick" class="mode-btn active" type="button">⚡ Quick Link Status</button>
+              <button id="downlink-mode-depth" class="mode-btn" type="button">🔬 In-Depth Payload &amp; JSON</button>
+            </div>
+            <span class="sub-hint">Queue telemetry locally · Private HAL sessions always excluded</span>
+          </div>
+          <span id="dl-status-pill" class="triage-pill pill-nominal">SIMULATED LINK READY</span>
+        </div>
+
+        <div class="sub-glass eng-toolbar">
+          <div class="eng-group">
+            <span class="zone-kicker">EARTH-MARS DOWNLINK</span>
+            <button id="dl-conn-btn" class="eng-btn active" type="button">Ground Link: ONLINE</button>
+            <select id="dl-latency-select" class="eng-select" aria-label="One-way light delay">
+              <option value="3" selected>3s · Local Demo</option>
+              <option value="30">30s · Delayed Link</option>
+              <option value="1320">22m (1320s) · Mars Scenario</option>
+            </select>
+          </div>
+          <div class="eng-group">
+            <button id="dl-send-btn" class="btn-glass-pri" type="button">Queue Telemetry Snapshot</button>
+            <a id="dl-export-link" class="btn-glass-sec" href="/api/hal/downlink/export?t=40" target="_blank">Export JSON</a>
+          </div>
+        </div>
+
+        <div id="dl-disclaimer-card" class="sub-glass dl-disclaimer hidden">
+          Store-and-forward queue saves durable JSON packets locally. When Ground Link goes offline, packets wait safely without dropping; null is preserved for missing signals, and private HAL2030 companion chats are strictly excluded. No real NASA endpoint is contacted.
+        </div>
+
+        <div class="sub-glass eng-hero-strip dl-kpi-strip">
+          <div class="eng-hero-cell"><div class="kpi-cell-label">TOTAL PACKETS</div><div id="dl-total-val" class="kpi-cell-val">0</div></div>
+          <div class="eng-hero-cell"><div class="kpi-cell-label">QUEUED / OFFLINE</div><div id="dl-queued-val" class="kpi-cell-val">0</div></div>
+          <div class="eng-hero-cell"><div class="kpi-cell-label">IN TRANSIT</div><div id="dl-transit-val" class="kpi-cell-val">0</div></div>
+          <div class="eng-hero-cell"><div class="kpi-cell-label">DELIVERED (SIM)</div><div id="dl-delivered-val" class="kpi-cell-val">0</div></div>
+        </div>
+
+        <div id="dl-split-grid" class="eng-bench dl-split dl-compact">
+          <div class="sub-glass">
+            <div class="panel-head">
+              <h2 class="panel-title">Outbox Queue</h2>
+              <span class="sub-hint">Tap packet to inspect JSON</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr><th>Packet ID</th><th>Mission Time</th><th>Status</th><th>ETA</th><th>Action</th></tr>
+                </thead>
+                <tbody id="dl-queue-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="dl-json-inspector-card" class="sub-glass hidden">
+            <div class="panel-head">
+              <h2 class="panel-title">Packet JSON Inspector</h2>
+              <span id="dl-inspect-id" class="sub-hint">Select or queue a packet</span>
+            </div>
+            <pre id="dl-packet-json" class="dl-json-pre">No packet selected yet. Click "Queue Telemetry Snapshot" to store an encrypted-style local JSON health packet.</pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== VIEW: HAL2030 PRIVATE CABIN COMPANION ==================== -->
+      <section id="view-companion" class="hidden" aria-label="HAL2030 Private Cabin Companion">
+        <div class="sub-glass comp-header-bar">
+          <div class="level2-crew-bar" id="comp-crew-bar">
+            <button class="crew-chip active" data-crew="anton"><img src="/static/assets/portraits/anton.png" alt="Anton" /><span>Anton</span></button>
+            <button class="crew-chip" data-crew="idan"><img src="/static/assets/portraits/idan.png" alt="Idan" /><span>Idan</span></button>
+            <button class="crew-chip" data-crew="itay"><img src="/static/assets/portraits/itay.png" alt="Itay" /><span>Itay</span></button>
+            <button class="crew-chip" data-crew="emily"><img src="/static/assets/portraits/emily.png" alt="Emily" /><span>Emily</span></button>
+            <button class="crew-chip" data-crew="sofia"><img src="/static/assets/portraits/sofia.png" alt="Sofia" /><span>Sofia</span></button>
+            <button class="crew-chip" data-crew="camila"><img src="/static/assets/portraits/camila.png" alt="Camila" /><span>Camila</span></button>
+          </div>
+          <div class="mode-switch" role="group" aria-label="Companion Session Mode">
+            <button id="comp-mode-hal" class="mode-btn active" type="button">HAL2030 · Scripted</button>
+            <button id="comp-mode-family" class="mode-btn" type="button">Family Archive · Simulated</button>
+          </div>
+        </div>
+
+        <div class="comp-layout">
+          <div class="sub-glass comp-left-card">
+            <div class="hal-optical-wrap">
+              <div id="hal-optical-iris" class="hal-optical-iris">
+                <div class="hal-lens-ring"></div>
+                <div class="hal-lens-core"></div>
+              </div>
+              <div>
+                <div id="comp-person-name" class="gc-name">Anton</div>
+                <div id="comp-person-ctx" class="sub-hint">Private cabin session · Excluded from downlink</div>
+              </div>
+            </div>
+
+            <div id="comp-mode-note" class="comp-mode-note">
+              SCRIPTED COMPANION · Prepared responses only. No local LLM is loaded in this preview.
+            </div>
+
+            <div class="comp-voice-box">
+              <div class="voice-head">
+                <span id="comp-voice-status" class="sub-hint">MICROPHONE OFF · VISUAL DEMO</span>
+                <button id="comp-voice-btn" class="eng-btn" type="button">🎙 Speak to HAL</button>
+              </div>
+              <div id="comp-voice-bars" class="voice-bars" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <div class="comp-quick-prompts">
+              <span class="zone-kicker">QUICK PROMPTS</span>
+              <div class="comp-prompt-grid">
+                <button class="eng-btn comp-prompt-btn" data-prompt="Review my readings" type="button">Review my readings</button>
+                <button class="eng-btn comp-prompt-btn" data-prompt="I miss home" type="button">I miss home</button>
+                <button class="eng-btn comp-prompt-btn" data-prompt="Help me unwind" type="button">Help me unwind</button>
+                <button class="eng-btn comp-prompt-btn" data-prompt="How does privacy work?" type="button">Privacy &amp; downlink</button>
+              </div>
+            </div>
+
+            <details class="comp-setup-details">
+              <summary>Offline Engine &amp; Archive Setup Preview</summary>
+              <div class="comp-setup-body">
+                <div><strong>Local Inference:</strong> Placeholder for onboard GGUF/ONNX model (designed for zero Earth link).</div>
+                <div><strong>Family Archive:</strong> Fictional sample mode; future approved family messages remain clearly labeled simulated.</div>
+              </div>
+            </details>
+          </div>
+
+          <div class="sub-glass comp-chat-card">
+            <div class="panel-head">
+              <h2 class="panel-title">Private Session Transcript</h2>
+              <button id="comp-clear-btn" class="mini-link-btn" type="button">Clear Session</button>
+            </div>
+            <div id="comp-transcript" class="comp-transcript"></div>
+            <form id="comp-form" class="comp-form">
+              <input id="comp-input" class="eng-input comp-input" type="text" placeholder="Type a private message to HAL2030..." autocomplete="off" />
+              <button id="comp-send-btn" class="btn-glass-pri" type="submit">Send</button>
+            </form>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <audio id="voice-audio-player" class="hidden"></audio>
+  <script src="/static/app.js"></script>
+</body>
+</html>

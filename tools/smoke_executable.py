@@ -2,6 +2,7 @@
 import argparse
 import json
 import os
+import shutil
 from pathlib import Path
 import struct
 import subprocess
@@ -31,6 +32,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('executable', type=Path)
     parser.add_argument('--output-dir', type=Path, required=True)
+    parser.add_argument('--verify-voice-model', action='store_true')
     args = parser.parse_args()
     executable = args.executable.resolve(strict=True)
     output = args.output_dir.resolve()
@@ -38,10 +40,26 @@ def main():
     (output / 'manifest.json').unlink(missing_ok=True)
     with tempfile.TemporaryDirectory(prefix='hal2030-smoke-') as temp:
         cwd = Path(temp)
+        if args.verify_voice_model:
+            distribution = cwd / 'Extracted HAL2030'
+            shutil.copytree(executable.parent, distribution)
+            executable = distribution / executable.name
         env = dict(os.environ, QT_QPA_PLATFORM='offscreen', LOCALAPPDATA=str(cwd / 'local'))
         subprocess.run([str(executable), '--paused', '--smoke-test', str(output)],
                        cwd=cwd, env=env, check=True, timeout=180)
         count = validate_capture(output)
+        if args.verify_voice_model:
+            receipt = output / 'voice-model.json'
+            receipt.unlink(missing_ok=True)
+            result = subprocess.run([str(executable), '--verify-voice-model', str(receipt)],
+                                    cwd=cwd, env=env, timeout=180)
+            if result.returncode:
+                error = receipt.with_suffix('.error.txt')
+                raise RuntimeError(error.read_text(encoding='utf-8') if error.exists() else 'Voice check failed without a traceback')
+            voice = json.loads(receipt.read_text(encoding='utf-8'))
+            expected = executable.parent / 'voice-model' / 'vosk-model-small-en-us-0.15'
+            if not voice.get('loaded') or not voice.get('silence_decoded') or Path(voice['model_path']).resolve() != expected.resolve():
+                raise RuntimeError('Bundled voice model was not detected and loaded')
         queue = cwd / 'local' / 'HAL2030' / 'runtime' / 'downlink' / 'queue.json'
         if json.loads(queue.read_text(encoding='utf-8')) != []:
             raise RuntimeError('Unexpected smoke-test queue contents')
