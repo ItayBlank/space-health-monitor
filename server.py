@@ -421,3 +421,7 @@ async def hal_voice_transcribe(file: UploadFile = File(...)) -> dict:
         return transcribe_audio_bytes(data, suffix=suffix)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+# Mission-aware, three-minute pre-task PVT. Kept at the tail to avoid import coupling.
+from astra_core.pvt_api import router as pvt_router
+app.include_router(pvt_router)

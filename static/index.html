@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/pvt.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 </head>
 <body class="theme-day state-nominal glance-active">
@@ -772,28 +773,78 @@
 
         <!-- STARTER GUIDE 3 INTERACTIVE ONBOARD SELF-CHECKS -->
         <div class="starter-checks-grid">
-          <!-- 1. Mission-Aware 3-Min PVT Vigilance Check -->
-          <div class="sub-glass check-card">
+          <!-- Pre-task PVT is mission-aware and lives in its own service module. -->
+          <section id="pvt-panel" class="sub-glass pvt-panel" aria-labelledby="pvt-title">
             <div class="panel-head">
               <div>
-                <span class="zone-kicker">STARTER CHECK 01 · COGNITION</span>
-                <h2 class="panel-title">3-Min PVT Reaction Check</h2>
+                <span class="zone-kicker">PRE-TASK CHECK · MEASURED VISUAL RESPONSE</span>
+                <h2 class="panel-title" id="pvt-title">Three-Minute PVT</h2>
               </div>
-              <span id="pvt-status-pill" class="triage-pill pill-nominal">READY</span>
+              <span id="pvt-status-pill" class="triage-pill pill-warning">CHECKING</span>
             </div>
-            <p class="check-desc">Mission-aware reaction check after short sleep or high CO2. Tap as soon as the optical ring turns emerald.</p>
-            <div class="pvt-stage">
-              <button id="pvt-stim-btn" class="pvt-stim-btn pvt-idle" type="button">
-                <span id="pvt-stim-label">TAP TO START 5-TRIAL CHECK</span>
-                <small id="pvt-stim-sub">Nominal baseline &lt; 280 ms · Auto-logs to crew fatigue</small>
-              </button>
+            <div class="pvt-toolbar">
+              <label>Crew
+                <select id="pvt-crew" class="eng-select" aria-label="Crew member"></select>
+              </label>
+              <label>Isolated demonstration
+                <select id="pvt-scenario" class="eng-select">
+                  <option value="">Live records</option>
+                  <option value="short-sleep">Short sleep</option>
+                  <option value="already-tested">Already tested</option>
+                  <option value="missing-log">Missing sleep log</option>
+                </select>
+              </label>
+              <button id="pvt-refresh" class="eng-btn" type="button">Refresh status</button>
             </div>
-            <div class="check-stats-row">
-              <span>Mean RT: <strong id="pvt-mean-ms">-- ms</strong></span>
-              <span>Trials: <strong id="pvt-trial-count">0 / 5</strong></span>
-              <button id="pvt-reset-btn" class="mini-link-btn" type="button">Reset</button>
+            <div id="pvt-demo-banner" class="pvt-demo-banner hidden" role="note">
+              SYNTHETIC DEMONSTRATION · Isolated from measured logs, recommendations, and personal baselines.
             </div>
-          </div>
+            <p id="pvt-reason" class="check-desc">Loading event, sleep, and PVT status…</p>
+            <div class="pvt-state-grid">
+              <div><span>Assigned event</span><strong id="pvt-event">No current event</strong><small id="pvt-event-time">—</small></div>
+              <div><span>Prior 24h sleep</span><strong id="pvt-sleep">Unknown</strong><small id="pvt-sleep-detail">Complete current log required</small></div>
+              <div><span>Personal baseline</span><strong id="pvt-baseline">Unavailable</strong><small id="pvt-baseline-detail">Same protocol · measured runs only</small></div>
+            </div>
+            <div class="pvt-actions">
+              <button id="pvt-start" class="btn-glass-pri" type="button" disabled>Start three-minute check</button>
+              <span id="pvt-start-note" class="sub-hint">A check is recommended only inside the assigned event window.</span>
+            </div>
+            <div id="pvt-run" class="pvt-run hidden" aria-live="polite">
+              <div class="pvt-run-head"><strong id="pvt-run-clock">03:00</strong><span id="pvt-run-message">Focus on the visual signal and respond as quickly as possible.</span></div>
+              <button id="pvt-stimulus" class="pvt-stimulus" type="button" aria-label="Respond when the visual signal appears">READY</button>
+              <button id="pvt-abort" class="eng-btn" type="button">Cancel check</button>
+            </div>
+            <div id="pvt-result" class="pvt-result hidden" role="status"></div>
+            <details class="pvt-recording">
+              <summary>Update sleep log or assigned event</summary>
+              <form id="pvt-sleep-form" class="pvt-entry-form">
+                <strong>Prior 24h sleep intervals</strong>
+                <p class="sub-hint">Enter every sleep interval and mark the log complete only if the full preceding 24 hours are covered.</p>
+                <div class="pvt-form-row">
+                  <label>Sleep began <input id="pvt-sleep-start" type="datetime-local"></label>
+                  <label>Sleep ended <input id="pvt-sleep-end" type="datetime-local"></label>
+                  <button id="pvt-sleep-add" class="mini-link-btn" type="button">Add interval</button>
+                </div>
+                <ul id="pvt-sleep-draft" class="pvt-sleep-draft" aria-live="polite"></ul>
+                <label class="pvt-check"><input id="pvt-sleep-complete" type="checkbox"> I verified that this complete log covers the preceding 24 hours</label>
+                <button class="eng-btn" type="submit">Save sleep interval</button>
+              </form>
+              <form id="pvt-event-form" class="pvt-entry-form">
+                <strong>Assigned critical event</strong>
+                <div class="pvt-form-row">
+                  <label>Event title <input id="pvt-event-title" class="eng-input" maxlength="160" value="EVA preparation" required></label>
+                  <label>Event time (local) <input id="pvt-event-input" type="datetime-local" required></label>
+                </div>
+                <button class="eng-btn" type="submit">Assign or reschedule event</button>
+              </form>
+            </details>
+            <div class="pvt-records">
+              <h3>Completed PVT records</h3>
+              <p id="pvt-records-empty" class="sub-hint">No measured same-protocol records.</p>
+              <ul id="pvt-records-list"></ul>
+            </div>
+            <p class="pvt-protocol-note">PVT-B protocol v1 · 180 seconds · visual signal · randomized 2–5 s intervals · keyboard or button response · 500 ms illustrative lapse threshold. Browser-reported timing is not authenticated. Local demo guidance only.</p>
+          </section>
 
           <!-- 2. Calibrated Self-Administered Near-Vision (SANS) Exam + Lightweight CPU Voice -->
           <div class="sub-glass check-card sans-vision-card" id="sans-vision-card">
@@ -1089,5 +1140,6 @@
 
   <audio id="voice-audio-player" class="hidden"></audio>
   <script src="/static/app.js"></script>
+  <script src="/static/pvt.js"></script>
 </body>
 </html>
