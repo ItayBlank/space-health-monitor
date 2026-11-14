@@ -7,8 +7,8 @@ For a crew member, show a recommendation only when all of these are true:
 1. The next assigned critical event is still in the future and starts in
    `(now_utc, now_utc + 2 hours]`; equivalently,
    `event_utc - 2 hours <= now < event_utc`.
-2. A complete, user-entered sleep snapshot is available from the preceding
-   two hours and its sleep intervals total less than 360 minutes in the rolling
+2. A complete, user-entered sleep snapshot was recorded in the preceding
+   24 hours and its sleep intervals total less than 360 minutes in the rolling
    24-hour window.
 3. No valid, completed measured session with protocol
    `pvt-b-180s-v1` is recorded in that event's current two-hour window.
@@ -22,7 +22,7 @@ Sleep data are interval logs entered by the user. A `complete` flag is an
 assertion by the recorder that the sleep log is complete; the app does not
 measure sleep or independently verify continuous coverage. The service saves
 UTC intervals, unions overlaps, clips them to `now - 24 hours .. now`, and
-retains the snapshot's UTC as-of time. A snapshot older than two hours is
+retains the snapshot's UTC as-of time. A snapshot older than 24 hours is
 unknown. The UI calls these logged intervals and shows their as-of time.
 
 Event times are assigned per crew in UTC. The UI can assign or reschedule an

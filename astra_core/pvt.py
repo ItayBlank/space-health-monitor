@@ -129,12 +129,12 @@ def _in_window(event: dict, now: datetime) -> bool:
 
 def _sleep(logs: list[dict], now: datetime) -> tuple[float | None, bool, str | None]:
     cutoff = now-timedelta(hours=24)
-    recent = [r for r in logs if parse_utc(r["recorded_at_utc"]) >= now-timedelta(hours=2)]
+    recent = [r for r in logs if parse_utc(r["recorded_at_utc"]) >= now-timedelta(hours=24)]
     if not recent:
         return None, False, None
     row = recent[-1]
     age = now-parse_utc(row["recorded_at_utc"])
-    if not row["complete"] or age < timedelta(0) or age > timedelta(hours=2) or parse_utc(row["coverage_start_utc"]) > cutoff:
+    if not row["complete"] or age < timedelta(0) or age > timedelta(hours=24) or parse_utc(row["coverage_start_utc"]) > cutoff:
         return None, False, None
     spans = []
     for interval in row["intervals"]:
@@ -187,7 +187,7 @@ def get_status(crew_id: str, now: datetime | None = None, scenario: str | None =
     recommend = bool(event_window and known and minutes is not None and minutes < 360 and not tested)
     reason = ("No upcoming assigned critical event is recorded." if not event else
               "The assigned event is outside its two-hour pre-task window." if not event_window else
-              "Sleep unknown: no fresh complete sleep log covers the preceding 24 hours." if not known else
+              "Sleep unknown: no complete sleep log was recorded in the preceding 24 hours." if not known else
               "A valid same-protocol PVT is already recorded in this event window." if tested else
               "Sleep is at least 6 hours; no pre-task PVT is indicated." if minutes >= 360 else
               "Sleep is under 6 hours and no valid PVT is recorded in this event window.")

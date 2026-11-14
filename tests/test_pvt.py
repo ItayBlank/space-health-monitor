@@ -77,7 +77,7 @@ def test_incomplete_and_expired_sleep_snapshots_are_unknown(store):
     sleep_at(complete=False)
     assert pvt.get_status("anton", NOW)["sleep"]["status"] == "unknown"
     store.unlink()
-    sleep_at(now=NOW-timedelta(minutes=121))
+    sleep_at(now=NOW-timedelta(hours=24, minutes=1))
     assert pvt.get_status("anton", NOW)["sleep"]["status"] == "unknown"
 
 
@@ -216,3 +216,20 @@ def test_same_protocol_completion_in_suppression_window_covers_overlapping_event
     assert moved["event_utc"] == "2030-01-01T15:00:00Z"
     assert not status["recommend"]
     assert "already recorded" in status["reason"]
+
+
+def test_morning_sleep_snapshot_can_trigger_for_event_six_hours_later(store):
+    sleep_at(intervals=[
+        {"start_utc": (NOW-timedelta(hours=8)).isoformat(), "end_utc": (NOW-timedelta(hours=3)).isoformat()}
+    ])
+    event_at(NOW+timedelta(hours=6))
+    status = pvt.get_status("anton", NOW+timedelta(hours=4))
+    assert status["sleep"]["status"] == "known"
+    assert status["sleep"]["total_minutes"] == 300
+    assert status["recommend"]
+
+
+def test_snapshot_older_than_24_hours_is_unknown(store):
+    event_at()
+    sleep_at(now=NOW-timedelta(hours=24, minutes=1))
+    assert pvt.get_status("anton", NOW)["sleep"]["status"] == "unknown"
