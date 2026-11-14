@@ -213,3 +213,31 @@ Claim a feature in the [issue tracker](../../issues) before starting. Work on on
 ## Data and license
 
 The [MIT License](LICENSE) covers this project's code and documentation. Linked datasets retain their original terms. The demo uses public source data where available and labels simulated crew records.
+
+## CI maintenance contract
+
+Every pull request (including drafts and fork PRs) runs the same tests and Windows
+build against GitHub's proposed merge with `main`. Pushes to `main` build the merged
+app. Manual runs are available. New pushes to a PR cancel its outdated run; feature
+branch pushes do not duplicate the PR build. Existing PRs created before a CI change
+may need their branch updated from `main` to adopt it.
+
+CI installs the checked-out requirements, discovers tests with pytest, and asks the
+packaged app to smoke-test every current navigation page. No page count, crew name,
+or telemetry filename is hard-coded in the workflow or smoke runner. The build
+includes all tracked files under `assets/` and `data/`, plus non-Python package
+resources under `hal2030/`. Untracked downloads, runtime output and virtual
+environments are excluded. Commit only distributable resources in those locations.
+
+For ordinary features, add runtime dependencies to `requirements.txt` (or included
+requirements files), put resources in those directories, and add behavioral tests.
+Application submodules are collected even when imported dynamically. New dialogs
+and hardware integrations still need feature-specific tests; navigation screenshots
+do not exercise every interaction. Native dependencies, unusual dynamic imports,
+external model downloads or additional distribution formats may need packaging
+hooks or CI changes. An arbitrary future feature cannot be guaranteed to package
+without any maintenance.
+
+PR executable artifacts include the PR number and tested commit SHA. Smoke artifacts
+include `manifest.json`, which lists the captured pages, alongside screenshots.
+The existing read-only Actions permissions and secret-free build also apply to forks.
