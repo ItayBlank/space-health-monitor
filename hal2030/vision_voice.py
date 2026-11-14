@@ -31,6 +31,7 @@ class VoiceGuide(QObject):
     """
     command = Signal(str)
     status = Signal(str)
+    mode_changed = Signal(str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -53,12 +54,24 @@ class VoiceGuide(QObject):
         self.last_text = ''
         self.speaking = False
         self.input_enabled = True
+        self.loading = False
+        self.error_message = ''
+
+    def publish_mode(self):
+        """Emit the current input/output state for the persistent voice indicator."""
+        mode = ('speaking' if self.speaking else 'loading' if self.loading else
+                'listening' if self.listening else 'waiting' if self.active else
+                'error' if self.error_message else 'off')
+        self.mode_changed.emit(mode)
 
     def start(self, model_path: str):
         """Start local microphone recognition once; model loading is nonblocking."""
         if self.worker and self.worker.is_alive():
             return
         self.cancel = threading.Event()
+        self.loading = True
+        self.error_message = ''
+        self.publish_mode()
         self.status.emit('Loading offline speech model…')
         self.worker = threading.Thread(target=self._run, args=(model_path, self.cancel), daemon=True)
         self.worker.start()
@@ -111,14 +124,19 @@ class VoiceGuide(QObject):
 
     def _failed(self, message):
         self.active = False
+        self.loading = False
+        self.error_message = message
         self.listening = False
         self.generation += 1
         self.status.emit(message)
+        self.publish_mode()
 
     def _ready(self):
         if self.closed:
             return
         self.active = True
+        self.loading = False
+        self.publish_mode()
         if not self.speaking:
             self._arm(self.generation)
 
@@ -126,6 +144,7 @@ class VoiceGuide(QObject):
         if not self.closed and self.listening and generation == self.generation:
             self.listening = False
             self.generation += 1
+            self.publish_mode()
             self.command.emit(text)
 
     def say(self, text):
@@ -145,6 +164,7 @@ class VoiceGuide(QObject):
             self.status.emit('Text guidance active. Voice narration unavailable or muted.')
             token = self.generation
             QTimer.singleShot(700, lambda: self._arm(token))
+        self.publish_mode()
 
     def _tts_state(self, state):
         if self.closed:
@@ -158,13 +178,15 @@ class VoiceGuide(QObject):
         elif state == QTextToSpeech.State.Speaking:
             self.speaking = True
             self.listening = False
+        self.publish_mode()
 
     def _arm(self, token):
         if self.closed or token != self.generation or self.speaking or not self.input_enabled:
             return
         self.listening = self.active
+        self.publish_mode()
         self.status.emit('Listening — say your answer or continue.' if self.active else
-                         'Microphone off — buttons and keyboard remain available.')
+                         self.error_message or 'Microphone off — buttons and keyboard remain available.')
 
     def stop(self):
         """Disable commands immediately and signal the worker to release its audio stream."""
@@ -173,3 +195,7 @@ class VoiceGuide(QObject):
         self.generation += 1
         self.cancel.set()
         self.tts.stop()
+        self.active = False
+        self.loading = False
+        self.speaking = False
+        self.publish_mode()

@@ -107,6 +107,21 @@ class VisionDialog(QDialog):
         note = QLabel('Functional vision demo • user-performed responses • simulated preflight baseline • not a diagnosis')
         note.setWordWrap(True)
         root.addWidget(note)
+        voice_controls = QHBoxLayout()
+        self.microphone_button = QPushButton('Enable microphone')
+        self.microphone_button.setMinimumHeight(42)
+        self.microphone_button.clicked.connect(lambda: self.voice.start(self.model_path.text()))
+        voice_controls.addWidget(self.microphone_button)
+        self.voice_light = QLabel('● MICROPHONE OFF')
+        self.voice_light.setMinimumWidth(210)
+        self.voice_light.setAccessibleName('Voice activity: microphone off')
+        voice_controls.addWidget(self.voice_light)
+        voice_controls.addStretch()
+        self.button_mode = QCheckBox('Use buttons instead of microphone')
+        voice_controls.addWidget(self.button_mode)
+        root.addLayout(voice_controls)
+        self.voice.mode_changed.connect(self._voice_mode_changed)
+        self.voice.publish_mode()
         self.instructions = QLabel()
         self.instructions.setWordWrap(True)
         self.instructions.setMinimumHeight(75)
@@ -165,7 +180,8 @@ class VisionDialog(QDialog):
         self.watch.setInterval(500)
         self.watch.timeout.connect(self.check_display)
         self.watch.start()
-        self.instruct('Before starting, record your symptom and viewing conditions. Enable voice if desired. '
+        self.instruct('First, click Enable microphone above for spoken answers, or choose Use buttons instead. '
+                      'Then record your symptom and viewing conditions. '
                       'Use a ruler to make both calibration bars exactly fifty millimetres long.')
 
     def _setup_page(self):
@@ -214,9 +230,6 @@ class VisionDialog(QDialog):
         browse = QPushButton('Model folder…')
         browse.clicked.connect(self._browse_model)
         voice_row.addWidget(browse)
-        enable = QPushButton('Enable microphone')
-        enable.clicked.connect(lambda: self.voice.start(self.model_path.text()))
-        voice_row.addWidget(enable)
         layout.addLayout(voice_row)
         self.narration = QCheckBox('Speak instructions slowly (local English voice)')
         self.narration.setChecked(self.voice.narration)
@@ -228,6 +241,21 @@ class VisionDialog(QDialog):
         layout.addWidget(privacy)
         scroll.setWidget(content)
         return scroll
+
+    def _voice_mode_changed(self, mode):
+        labels = {'speaking': ('SPEAKING — please wait', '#ff6a76'),
+                  'listening': ('LISTENING — speak now', '#55dfad'),
+                  'loading': ('STARTING MICROPHONE', '#f7c469'),
+                  'waiting': ('WAIT — preparing to listen', '#f7c469'),
+                  'error': ('MICROPHONE UNAVAILABLE', '#f7c469'),
+                  'off': ('MICROPHONE OFF', '#8496ad')}
+        text, color = labels[mode]
+        self.voice_light.setText('● ' + text)
+        self.voice_light.setStyleSheet(f'color:{color};font-size:15px;font-weight:700;')
+        self.voice_light.setAccessibleName('Voice activity: ' + text.lower())
+        self.microphone_button.setText('Microphone enabled' if self.voice.active else
+                                       'Starting microphone…' if self.voice.loading else 'Enable microphone')
+        self.microphone_button.setEnabled(not self.voice.active and not self.voice.loading)
 
     def _browse_model(self):
         path = QFileDialog.getExistingDirectory(self, 'Select extracted Vosk model')
@@ -324,6 +352,11 @@ class VisionDialog(QDialog):
             self.voice.say('Review the report. Use Save and queue report, or repeat both eyes.')
 
     def start_test(self):
+        if not self.voice.active and not self.button_mode.isChecked():
+            self.instruct('Before starting, click Enable microphone at the top and wait for it to connect. '
+                          'If you prefer, select Use buttons instead of microphone.')
+            self.microphone_button.setFocus()
+            return
         if not (self.symptom.text().strip() and self.lighting.text().strip() and self.brightness.text().strip()
                 and self.correction.currentIndex() > 0 and self.ruler_confirm.isChecked()
                 and self.distance_confirm.isChecked()):

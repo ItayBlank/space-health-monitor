@@ -25,6 +25,7 @@ def dialog(tmp_path):
 
 
 def setup(view):
+    view.button_mode.setChecked(True)
     view.symptom.setText('Routine demo')
     view.correction.setCurrentIndex(1)
     view.lighting.setText('Cabin, no glare')
@@ -109,3 +110,35 @@ def test_repeat_preserves_previous_attempt(dialog):
     previous = dialog.attempts[0]
     dialog.repeat_test()
     assert dialog.stage == 'eye_setup' and dialog.attempts == [previous]
+
+
+def test_microphone_prompt_and_persistent_controls(dialog):
+    setup(dialog)
+    dialog.stage = 'setup'
+    dialog.button_mode.setChecked(False)
+    dialog.start_test()
+    assert dialog.stage == 'setup'
+    assert 'Enable microphone' in dialog.instructions.text()
+    assert not dialog.setup_page.isAncestorOf(dialog.microphone_button)
+    assert not dialog.setup_page.isAncestorOf(dialog.voice_light)
+    dialog.voice.active = True
+    dialog.start_test()
+    assert dialog.stage == 'eye_setup'
+
+
+def test_voice_light_tracks_speaking_listening_and_failure(dialog):
+    voice = dialog.voice
+    voice.active = True
+    voice.speaking = True
+    voice.publish_mode()
+    assert 'SPEAKING' in dialog.voice_light.text()
+    assert '#ff6a76' in dialog.voice_light.styleSheet()
+    voice.speaking = False
+    voice._arm(voice.generation)
+    assert 'LISTENING' in dialog.voice_light.text()
+    assert '#55dfad' in dialog.voice_light.styleSheet()
+    voice._failed('No input device')
+    assert 'UNAVAILABLE' in dialog.voice_light.text()
+    assert dialog.microphone_button.isEnabled()
+    voice._arm(voice.generation)
+    assert dialog.voice_status.text() == 'No input device'

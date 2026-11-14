@@ -34,7 +34,11 @@ the English Vosk model once:
 
 The model is stored under `runtime/voice-model/` for source execution, next to the
 downlink directory. Use **Model folder…** to select a model stored elsewhere.
-Click **Enable microphone** in setup. The app uses the operating system's default
+Click **Enable microphone** in the fixed header; it stays visible without scrolling
+through setup or during the test. Before testing, enable the microphone or explicitly
+select **Use buttons instead of microphone**. The header light is red while the app
+speaks, green only while commands are accepted, amber during startup/waiting or an
+input error, and gray when the microphone is off. Text labels accompany every color. The app uses the operating system's default
 input device; select the desired microphone in the OS before starting. The model
 is [Vosk small English US 0.15](https://alphacephei.com/vosk/models), Apache 2.0.
 Its files are not committed or bundled with the executable; a packaged copy needs
