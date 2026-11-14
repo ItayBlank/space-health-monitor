@@ -46,7 +46,7 @@ jobs:
         run: python -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
       - name: Bundle offline voice model and licenses
         run: |
-          python tools/download_voice_model.py --destination dist/voice-model
+          python tools/download_voice_model.py --engine vosk --destination dist/voice-model
           Copy-Item LICENSE dist/LICENSE
           Copy-Item packaging/README.txt dist/README.txt
           Copy-Item THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md

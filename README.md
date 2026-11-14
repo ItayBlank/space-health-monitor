@@ -26,8 +26,20 @@ To build locally on Windows using the development environment below:
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
-.\.venv\Scripts\python.exe tools/download_voice_model.py --destination dist/voice-model
+.\.venv\Scripts\python.exe tools/download_voice_model.py --engine vosk --destination dist/voice-model
 .\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
+```
+
+## ASTRA-Core + HAL2030 Web Console
+
+Alongside the desktop prototype (`main.py`), this branch provides the integrated **ASTRA-Core + HAL2030** FastAPI & Liquid Glass web console (`server.py`, `astra_core/`, `static/`):
+
+```powershell
+# Launch the web console
+uvicorn server:app --reload --port 8000
+
+# Optional offline CPU natural voice models (Kokoro-82M INT8 + Faster-Whisper tiny.en)
+python tools/download_voice_model.py --engine natural
 ```
 
 CI runs the core tests before packaging and launches all five packaged pages
