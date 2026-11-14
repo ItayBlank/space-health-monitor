@@ -1,107 +1,72 @@
-# Space Health Monitor — HAL2030
+# ASTRA-Core · HAL2030 — Space Health Monitor
 
-A local Python desktop prototype for the **NASA Space Apps Challenge 2026: Create Health Monitoring Software for Astronauts on Space Missions**.
+A local Python web console (with a companion PySide6 desktop prototype) for the **NASA Space Apps Challenge 2026: Create Health Monitoring Software for Astronauts on Space Missions**.
 
-HAL2030 combines a live crew overview, individual telemetry, a sensor registry, a simulated ground link, and six private companion sessions. Its dark spacecraft-console design uses cyan signal traces, clear green/amber/red status indicators, fictional flight-suit portraits, and an original red optical lens inspired by classic science-fiction interfaces.
+**ASTRA-Core + HAL2030** pairs a FastAPI telemetry engine (`server.py`, `astra_core/`, `hal2030/`) with a Liquid Glass web interface (`static/`) featuring Day/Night mission themes, crew vitals, PhysioNet BIDMC/PTT physiological replay, ISS REM/DOSTEL space-radiation shielding analysis, SANS/PVT cognitive-visual assessments, delayed Mars/Earth telemetry downlink simulation, and an offline CPU natural voice engine (**Kokoro-82M INT8** TTS + **Faster-Whisper tiny.en** STT).
 
-**Everything in the application is in English.** The supplied recording, people, events, and physiological signals are synthetic. After installing its dependencies, the application runs locally without an internet connection.
+**Everything in the application is in English.** Supplied scenario telemetry, portraits, and crew communications are synthetic/educational or derived from documented open research datasets (`data/sources.json`). Once dependencies and voice weights are installed locally, the web console runs without an internet connection.
 
-## Download the Windows executable
+---
 
-Open this repository's **Actions → Test and build**, select a successful run,
-and download the **HAL2030-windows-x64-<commit>** artifact. Extract the ZIP and
-launch `HAL2030.exe`. Keep the included `voice-model/` folder beside the executable. GitHub requires sign-in to download workflow artifacts.
-No Python installation is needed. Artifacts are retained for 14 days; builds run
-on pushes and pull requests and can also be started with **Run workflow**.
+## Quick Start — Web Console (Recommended)
 
-The download bundles the synthetic recording, portraits, and offline English Vosk
-model. The app finds the model automatically; no model setup or internet is needed
-on the tester's PC. Click **Enable microphone** in the vision check to use voice. It is unsigned,
-and the first launch takes a few seconds to extract its dependencies. Packaged
-runs preserve their outbox in `%LOCALAPPDATA%\HAL2030\runtime\downlink`;
-`--runtime-dir` overrides that location. Source runs keep `runtime/downlink/`.
-
-To build locally on Windows using the development environment below:
+1. **Clone the repository** (64-bit **Python 3.11–3.14**):
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
-.\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
-.\.venv\Scripts\python.exe tools/download_voice_model.py --engine vosk --destination dist/voice-model
-.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
+git clone https://github.com/ItayBlank/space-health-monitor.git
+cd space-health-monitor
 ```
 
-## ASTRA-Core + HAL2030 Web Console
-
-Alongside the desktop prototype (`main.py`), this branch provides the integrated **ASTRA-Core + HAL2030** FastAPI & Liquid Glass web console (`server.py`, `astra_core/`, `static/`):
-
-```powershell
-# Launch the web console
-uvicorn server:app --reload --port 8000
-
-# Optional offline CPU natural voice models (Kokoro-82M INT8 + Faster-Whisper tiny.en)
-python tools/download_voice_model.py --engine natural
-```
-
-CI runs the core tests before packaging and launches all five packaged pages
-offscreen from a separate working directory. This is a startup/resource-loading
-check, not a complete interactive Windows test.
-
-## Quick start on Windows / VS Code
-
-1. Clone this repository and open `space-health-monitor` in VS Code; this folder contains `main.py`.
-
-   ```powershell
-   git clone https://github.com/ItayBlank/space-health-monitor.git
-   cd space-health-monitor
-   ```
-2. Use **64-bit Python 3.11–3.14**. Python 3.12 or 3.13 is a convenient choice.
-3. Open a VS Code terminal and run:
+2. **Create a virtual environment and install dependencies:**
 
 ```powershell
 py -3 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe main.py
 ```
 
-There is no need to activate the environment, so PowerShell execution-policy settings do not block these commands. The first dependency installation needs internet access; the app itself does not.
+*(macOS / Linux: `python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt`)*
 
-Alternatively, double-click **`start_windows.bat`**. It creates the local environment, installs missing packages, and launches the app. Subsequent launches use the installed packages.
+3. **Download local CPU voice models (Kokoro-82M INT8 TTS + Faster-Whisper tiny.en STT):**
 
-For debugging, select the `.venv` interpreter with **Python: Select Interpreter**, then press **F5**. Included launch profiles open either the standard demonstration or Anton's oxygen-alert scenario. Install the VS Code Python extension if it is not already available.
-
-### macOS / Linux
-
-```bash
-python3 -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python main.py
+```powershell
+.\.venv\Scripts\python.exe tools/download_voice_model.py --engine natural
 ```
 
-The `start_unix.sh` helper performs those steps when needed. A graphical desktop and Qt's platform dependencies are required. If a minimal Linux installation reports a missing `xcb` library, use the distribution's Qt/X11 runtime packages; Windows wheels include the required Qt libraries.
+*(Voice weights are stored in `runtime/voice-model/`. If omitted, Kokoro files can also auto-download on first demand when online.)*
 
-## Guided near-vision check
+4. **Launch the website and open it in your browser:**
 
-In **Crew detail**, select an astronaut and click **Start vision check** to open a
-separate window. It provides ruler calibration, 40 cm distance confirmation,
-screen-relative direction practice, rotated-E trials for each eye, slow spoken
-guidance, and confirmed offline voice answers. Buttons remain available.
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn server:app --host 127.0.0.1 --port 8000
+```
 
-The Windows download includes the microphone model. For source runs only, run
-`python tools/download_voice_model.py` once with the project environment. Then
-click **Enable microphone** in the exam setup. Reports
-are saved locally and queued in Mission control. Display limits and the simulated
-baseline are explicit; this is a functional demo, not a validated clinical exam.
-See [the protocol and voice setup](docs/VISION_TEST.md).
+Open `http://127.0.0.1:8000` in Chrome, Edge, or Firefox.
 
-## The five views
+---
+
+## Web Console Views
 
 | View | Implemented behavior |
 |---|---|
-| **Crew overview** | Six live cards; heart rate, oxygen saturation and respiration; 60-second sparklines; activity labels; status rings; crew/sensor counts; cabin context; recent events; manual snapshot sending. |
-| **Crew detail** | Select a person, inspect additional values, view synthetic ECG/respiration/EEG strips and trailing trends, read the current recommendation cards, and open that person's companion session. |
-| **Sensor network** | All 42 assignments with sensor name, owner, placement, state, current values, quality and latest observation. Filters select an astronaut or signal state. Double-click a sensor to open its owner's detail page. |
-| **Mission control** | Manual or automatic health snapshots, a durable local JSON outbox, an offline-link switch, selectable delay, packet inspection, export, and simulated receipt. |
-| **HAL2030** | Six separate conversations; scripted English replies; private per-person history; visual voice-chat preview; local-model setup placeholder; clearly labeled family-archive simulation. |
+| **Glance & Readiness** | Left-anchored mission timeline & crew cards alongside an expanded **Station Readiness** panel with priority watch, recent events, cabin environment context, and Day/Night Liquid Glass styling. |
+| **Actions** | Crew-filtered operational & medical check-off protocols reactive to live alert severity. |
+| **Heart (Cardiovascular)** | Individual 1 Hz vitals, activity-aware rules, synthetic ECG/PPG strips, and **PhysioNet BIDMC / PTT** dataset replay. |
+| **RadLab (Radiation)** | **ISS REM 2024 & DOSTEL** orbital dose-rate timeline, module shielding simulation, and Solar Particle Event (SPE) / GCR presets. |
+| **Sensors & SANS** | All 42 sensor channels with filters, Psychomotor Vigilance Task (**PVT**), **SANS** optical/Amsler exam with voice readout, and Guided Near-Vision check. |
+| **Downlink (Mission Link)** | Durable local JSON snapshot queue (`runtime/downlink/`) with offline toggle and **Local · 3 s** / **Mars · 22 min** latency presets. |
+| **HAL2030 Companion** | Six isolated crew chat sessions with local **Kokoro-82M INT8** natural speech output, **Faster-Whisper tiny.en** microphone transcription, and IEC 60601-1-8 / NASA-STD-3001 gentle marimba chimes + anti-overload critical callouts (`Voice` / `Chime` / `Muted`). |
+
+---
+
+## Legacy Desktop Prototype & CI Executable (`main.py`)
+
+This repository also retains the original **PySide6 desktop prototype** (`main.py`) and CI Windows executable build (`HAL2030.exe`):
+
+```powershell
+.\.venv\Scripts\python.exe main.py
+```
+
+Or double-click `start_windows.bat` (`./start_unix.sh` on macOS/Linux). Prebuilt desktop workflow artifacts are available under **Actions → Test and build** (`HAL2030-windows-x64-<commit>`). See `.github/workflows/tests.yml` for the automated CI packaging and `--engine vosk` smoke checks.
 
 The main alert banner appears on every view. An affected astronaut's portrait is enlarged in **Priority watch**. Click that portrait or **Review recommended actions** to open predefined guidance. Opening an action card does not clear a physiological alert: its state follows the current telemetry.
 
@@ -161,42 +126,53 @@ Latency runs on elapsed wall time, independently of replay speed or seeking. It 
 
 This build has **no NASA network endpoint**. Receipt is simulated locally. **Export snapshot** writes a real, inspectable JSON file. Health packets contain sensor summaries, activity, availability and alerts; companion messages are excluded.
 
-## HAL2030 and family archive
+## HAL2030 Voice Engine & Family Archive
 
-The companion has working navigation, isolated conversation histories, text entry, prepared responses, quick prompts and a visual voice-state animation. **Start voice demo** cycles through simulated listening, transcription and reply states; it does not access the microphone or produce speech.
-
-**Connect local model** opens a setup preview for a local model path. No inference engine is installed. **Preview archive setup** offers a file-selection preview; selected archive contents are not read. Family mode always identifies its replies as a **simulation**, with fictional examples. It is not presented as a live call with a relative. Session histories remain in memory and clear when the application closes.
+- **Web Console (`server.py`):** Provides isolated six-crew companion sessions backed by real local CPU voice inference via `/api/hal/voice/status`, `/api/hal/voice/speak` (**Kokoro-82M INT8** WAV synthesis), and `/api/hal/voice/transcribe` (**Faster-Whisper tiny.en** speech-to-text). Crew health packets remain excluded from private companion chat, and family-archive replies are clearly labeled as simulations.
+- **Legacy Desktop Prototype (`main.py`):** Retains simulated voice-state preview and offline Vosk vision-check recognition.
 
 ## Project layout
 
 ```text
 space-health-monitor/
-  main.py                       Entry point and command-line options
-  requirements.txt              Runtime dependencies
-  requirements-dev.txt          Optional test dependency
-  start_windows.bat             Windows setup / launch helper
-  start_unix.sh                 macOS / Linux setup / launch helper
+  server.py                     FastAPI web console entrypoint & APIs
+  main.py                       Legacy PySide6 desktop prototype entrypoint
+  requirements.txt              Web, scientific, and desktop runtime dependencies
+  requirements-voice.txt        CPU voice dependencies (Kokoro-82M INT8 + Faster-Whisper)
+  requirements-dev.txt          Optional test dependencies
+  astra_core/
+    hal_bridge.py               Telemetry bridge, crew vitals & alert rules
+    radiation.py                ISS REM/DOSTEL orbital radiation & shielding model
+    vitals.py                   Cardiovascular telemetry & PhysioNet dataset replay
+    readiness.py                Station Readiness scoring & summary engine
+    standards.py                IEC 60601-1-8 / NASA-STD-3001 alert & operational limits
+  static/
+    index.html                  Liquid Glass web dashboard markup
+    styles.css                  Day/Night Liquid Glass styling & fluid layout transitions
+    app.js                      Interactive web console, Web Audio chimes & voice client
+    assets/                     Crew portraits & spacecraft body visualizations
   hal2030/
     config.py                   Crew, sensor metadata, metrics, demo limits
+    paths.py                    Unified source & runtime path resolution
+    voice_engine.py             Kokoro-82M INT8 TTS + Faster-Whisper tiny.en STT engine
     models.py                   Sample, Alert, and data-source protocol
     telemetry.py                CSV replay, generation, synthetic waveforms
     alerts.py                   Transparent predefined rules and actions
     downlink.py                 Durable local packet queue and simulated link
-    ui/
-      window.py                 Navigation, replay clock, global alert banner
-      theme.py                  Shared colors and styling
-      widgets.py                Portraits, HAL lens, metrics, reusable panels
-      dashboard.py              Crew overview and recommendation dialog
-      detail.py                 Individual vitals, plots and guidance
-      sensors.py                Sensor registry and filters
-      mission_control.py        Link controls, queue and packet inspection
-      companion.py              Per-crew chat and voice / AI placeholders
-  assets/portraits/              Six generated PNG portraits
-  data/telemetry_10min.csv       Complete ten-minute recording
-  tools/generate_telemetry.py    Reproducible dataset generator
-  tests/test_core.py             Core behavioral tests
-  docs/                         Architecture, schema, sources, demo guide
-  .vscode/                      Debug profiles and interpreter settings
+    ui/                         Legacy PySide6 desktop views
+  data/
+    telemetry_10min.csv         Complete ten-minute synthetic scenario recording
+    iss_modules_rem_2024.csv    ISS REM module dose rates
+    iss_dostel_orbital_2024_01_25.csv  Orbital DOSTEL radiation time-series
+    physionet_bidmc/            PhysioNet BIDMC physiological dataset slices
+    physionet_ptt/              PhysioNet pulse-transit-time dataset slices
+    sources.json                Data & model provenance registry
+  tools/
+    download_voice_model.py     Atomic voice model downloader (natural / vosk)
+    build_resources.py          Tracked resource verification for CI
+    generate_telemetry.py       Reproducible telemetry dataset generator
+  tests/                        Pytest suite (ASTRA-Core APIs, voice, radiation, vitals, desktop)
+  docs/                         Architecture, schema, provenance, and demo guides
 ```
 
 ## Useful launch options
