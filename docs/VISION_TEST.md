@@ -24,8 +24,13 @@ Qt TextToSpeech reads the visible instructions at a slow rate using an installed
 English system voice. Narration can be disabled. If the system voice is unavailable,
 text guidance remains usable. No LLM or cloud speech service is used.
 
-Install normal requirements (which include `requirements-voice.txt`), then download
-the English Vosk model once:
+The Windows artifact includes the English Vosk model beside `HAL2030.exe` in
+`voice-model/`. Extract the entire ZIP and keep that folder beside the executable;
+it is detected automatically, regardless of the working directory. No extra setup
+or internet connection is needed. Click **Enable microphone** to start listening.
+
+For source runs, install normal requirements (which include
+`requirements-voice.txt`), then download the English Vosk model once:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
@@ -41,9 +46,11 @@ speaks, green only while commands are accepted, amber during startup/waiting or 
 input error, and gray when the microphone is off. Text labels accompany every color. The app uses the operating system's default
 input device; select the desired microphone in the OS before starting. The model
 is [Vosk small English US 0.15](https://alphacephei.com/vosk/models), Apache 2.0.
-Its files are not committed or bundled with the executable; a packaged copy needs
-an extracted model directory selected in setup. Download needs internet; using the
-downloaded model does not.
+Its files stay out of Git. CI downloads a checksum-pinned official archive and
+ships the extracted model, original README, attribution and Apache 2.0 license
+with the executable. Source installation/build downloads need internet; using
+the bundled model does not. If the bundled folder is missing, setup falls back to
+the runtime model path; **Model folder…** still allows a custom location.
 
 Commands: **up, down, left, right, unable, continue, repeat, back, pause, resume**.
 Buttons provide the same controls; arrow keys and Space work in the test panel.

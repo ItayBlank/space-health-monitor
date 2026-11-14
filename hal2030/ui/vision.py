@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QFormLayout,
 from hal2030.config import CREW
 from hal2030.vision import Calibration, DIRECTIONS, EyeTest, levels_for, make_report, utcnow
 from hal2030.vision_voice import VoiceGuide
+from hal2030.voice_model import default_model_path
 
 
 class Chart(QWidget):
@@ -224,7 +225,7 @@ class VisionDialog(QDialog):
         layout.addWidget(self.ruler_confirm)
         layout.addWidget(self.distance_confirm)
         voice_row = QHBoxLayout()
-        self.model_path = QLineEdit(str(self.service.output_dir.parent / 'voice-model' / 'vosk-model-small-en-us-0.15'))
+        self.model_path = QLineEdit(str(default_model_path(self.service.output_dir.parent)))
         self.model_path.setPlaceholderText('Extracted offline Vosk model directory')
         voice_row.addWidget(self.model_path, 1)
         browse = QPushButton('Model folder…')

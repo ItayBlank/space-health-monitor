@@ -20,7 +20,12 @@ def main():
     parser.add_argument("--runtime-dir", type=Path, help="Alternative folder for the local simulated outbox")
     parser.add_argument("--screenshot", type=Path, help="Save a PNG of the initial page and exit (developer QA)")
     parser.add_argument("--smoke-test", type=Path, metavar="OUTPUT_DIR", help="Render every navigation page and write a manifest, then exit (developer QA)")
+    parser.add_argument("--verify-voice-model", type=Path, metavar="RECEIPT", help="Load the offline model without microphone access and exit (developer QA)")
     args = parser.parse_args()
+    if args.verify_voice_model:
+        from hal2030.voice_smoke import verify_voice_model
+        verify_voice_model(args.verify_voice_model)
+        return 0
     if args.smoke_test and args.screenshot:
         parser.error("Use either --smoke-test or --screenshot, not both.")
     if (args.screenshot or args.smoke_test) and sys.platform.startswith("linux") and not os.environ.get("DISPLAY"):

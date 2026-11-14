@@ -42,7 +42,8 @@ On Windows, validate packaging when the change affects distribution:
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
-.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+.\.venv\Scripts\python.exe tools/download_voice_model.py --destination dist/voice-model
+.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
 ```
 
 The app exposes its current navigation pages to the smoke runner. New dialogs and

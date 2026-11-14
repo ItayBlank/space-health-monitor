@@ -44,16 +44,20 @@ jobs:
       - run: python -m pip install -r requirements-build.txt
       - name: Build standalone executable
         run: python -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
+      - name: Bundle offline voice model and licenses
+        run: |
+          python tools/download_voice_model.py --destination dist/voice-model
+          Copy-Item LICENSE dist/LICENSE
+          Copy-Item packaging/README.txt dist/README.txt
+          Copy-Item packaging/THIRD_PARTY_NOTICES.txt dist/THIRD_PARTY_NOTICES.txt
+          Copy-Item packaging/Apache-2.0.txt dist/Apache-2.0.txt
       - name: Smoke-test packaged app
-        run: python tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+        run: python tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
       - name: Upload Windows executable
         uses: actions/upload-artifact@v4
         with:
           name: HAL2030-windows-x64-${{ github.event.pull_request.number && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_number) }}-${{ github.sha }}
-          path: |
-            dist/HAL2030.exe
-            LICENSE
-            packaging/README.txt
+          path: dist/
           if-no-files-found: error
           retention-days: 14
           compression-level: 0

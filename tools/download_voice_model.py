@@ -1,5 +1,6 @@
 """Download the official English Vosk model once; subsequent speech is offline."""
 import argparse
+import hashlib
 from pathlib import Path
 import sys
 import urllib.request
@@ -8,8 +9,7 @@ import zipfile
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from hal2030.downlink import DownlinkService
 
-MODEL = 'vosk-model-small-en-us-0.15'
-URL = f'https://alphacephei.com/vosk/models/{MODEL}.zip'
+from hal2030.voice_model import MODEL_NAME as MODEL, MODEL_URL as URL, MODEL_SHA256, model_present
 
 
 def main():
@@ -18,12 +18,15 @@ def main():
     args = parser.parse_args()
     target = args.destination or DownlinkService().output_dir.parent / 'voice-model'
     target.mkdir(parents=True, exist_ok=True)
-    if (target / MODEL / 'am/final.mdl').exists():
+    if model_present(target / MODEL):
         print(f'Model already present: {target / MODEL}')
         return
     archive = target / (MODEL + '.zip')
     print(f'Downloading {URL}')
     urllib.request.urlretrieve(URL, archive)
+    if hashlib.sha256(archive.read_bytes()).hexdigest() != MODEL_SHA256:
+        archive.unlink()
+        raise ValueError('Model download checksum mismatch')
     with zipfile.ZipFile(archive) as bundle:
         for info in bundle.infolist():
             resolved = (target / info.filename).resolve()

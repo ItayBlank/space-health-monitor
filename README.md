@@ -10,11 +10,13 @@ HAL2030 combines a live crew overview, individual telemetry, a sensor registry, 
 
 Open this repository's **Actions → Test and build**, select a successful run,
 and download the **HAL2030-windows-x64-<commit>** artifact. Extract the ZIP and
-launch `dist/HAL2030.exe`. GitHub requires sign-in to download workflow artifacts.
+launch `HAL2030.exe`. Keep the included `voice-model/` folder beside the executable. GitHub requires sign-in to download workflow artifacts.
 No Python installation is needed. Artifacts are retained for 14 days; builds run
 on pushes and pull requests and can also be started with **Run workflow**.
 
-The executable bundles the synthetic recording and portraits. It is unsigned,
+The download bundles the synthetic recording, portraits, and offline English Vosk
+model. The app finds the model automatically; no model setup or internet is needed
+on the tester's PC. Click **Enable microphone** in the vision check to use voice. It is unsigned,
 and the first launch takes a few seconds to extract its dependencies. Packaged
 runs preserve their outbox in `%LOCALAPPDATA%\HAL2030\runtime\downlink`;
 `--runtime-dir` overrides that location. Source runs keep `runtime/downlink/`.
@@ -24,7 +26,8 @@ To build locally on Windows using the development environment below:
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
 .\.venv\Scripts\python.exe -m PyInstaller --noconfirm --clean packaging/HAL2030.spec
-.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke
+.\.venv\Scripts\python.exe tools/download_voice_model.py --destination dist/voice-model
+.\.venv\Scripts\python.exe tools/smoke_executable.py dist/HAL2030.exe --output-dir build/smoke --verify-voice-model
 ```
 
 CI runs the core tests before packaging and launches all five packaged pages
@@ -71,8 +74,9 @@ separate window. It provides ruler calibration, 40 cm distance confirmation,
 screen-relative direction practice, rotated-E trials for each eye, slow spoken
 guidance, and confirmed offline voice answers. Buttons remain available.
 
-For microphone control, run `python tools/download_voice_model.py` once with the
-project environment, then click **Enable microphone** in the exam setup. Reports
+The Windows download includes the microphone model. For source runs only, run
+`python tools/download_voice_model.py` once with the project environment. Then
+click **Enable microphone** in the exam setup. Reports
 are saved locally and queued in Mission control. Display limits and the simulated
 baseline are explicit; this is a functional demo, not a validated clinical exam.
 See [the protocol and voice setup](docs/VISION_TEST.md).
