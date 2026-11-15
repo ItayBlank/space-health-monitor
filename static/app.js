@@ -827,6 +827,8 @@ function setLevel(newLevel) {
     cardio: "view-cardio",
     engineer: "view-engineer",
     sensors: "view-sensors",
+    biosense: "view-biosense",
+    medhub: "view-medhub",
     downlink: "view-downlink",
     companion: "view-companion",
   };
@@ -837,6 +839,8 @@ function setLevel(newLevel) {
     cardio: "rail-cardio",
     engineer: "rail-engineer",
     sensors: "rail-sensors",
+    biosense: "rail-biosense",
+    medhub: "rail-medhub",
     downlink: "rail-downlink",
     companion: "rail-companion",
   };
@@ -900,6 +904,12 @@ function setLevel(newLevel) {
   } else if (newLevel === "sensors") {
     $("win-main-title").textContent = "Wearable Sensor Network & Field Checks";
     $("win-main-sub").textContent = "42 crew wearable channels · 3-Min PVT Check · Near-Vision SANS · CO2 Hatch Trace";
+  } else if (newLevel === "biosense") {
+    $("win-main-title").textContent = "Bio-Sense Lab · Contactless Sleep, ARED & Facial CV";
+    $("win-main-sub").textContent = "Quadrature Sleep Radar / ESP32 CSI · ARED Pose Biomechanics · Passive Facial rPPG";
+  } else if (newLevel === "medhub") {
+    $("win-main-title").textContent = "ISS Unified MedHub · Pre-Symptomatic Intelligence";
+    $("win-main-sub").textContent = "6 Medical Silos Fused · NASA OSDR (OSD-569/575) & CCMC DONKI Grounded";
   } else if (newLevel === "downlink") {
     $("win-main-title").textContent = "Mission Control Earth-Mars Downlink";
     $("win-main-sub").textContent = "Store-and-forward local JSON queue · Null preserved on missing signals · Chats excluded";
@@ -3308,11 +3318,16 @@ function renderAll() {
 function bindEvents() {
   // VisionOS Rail & Header Navigation
   $("rail-glance").addEventListener("click", () => setLevel("glance"));
-  $("rail-checkins").addEventListener("click", () => setLevel("checkins"));
+  $("rail-checkins")?.addEventListener("click", () => setLevel("checkins"));
   $("rail-body").addEventListener("click", () => setLevel("body"));
   $("rail-cardio").addEventListener("click", () => setLevel("cardio"));
   $("rail-engineer").addEventListener("click", () => setLevel("engineer"));
   $("rail-sensors").addEventListener("click", () => setLevel("sensors"));
+  $("rail-biosense").addEventListener("click", () => setLevel("biosense"));
+  $("rail-medhub")?.addEventListener("click", () => {
+    setLevel("medhub");
+    if (typeof loadClinicalHub === "function") loadClinicalHub();
+  });
   $("rail-downlink").addEventListener("click", () => setLevel("downlink"));
   $("rail-companion").addEventListener("click", () => {
     state.comp.crewId = state.activeCrewId;
@@ -4753,3 +4768,691 @@ function checkGentleAudioAlerts() {
     );
   }
 }
+
+
+// === Deep-Tech Sleep Radar/CSI, ARED Gym CV & Passive Facial CV Wiring ===
+(function () {
+  function renderHypnogram(stages) {
+    const box = document.getElementById("sleep-hypnogram");
+    if (!box || !Array.isArray(stages)) return;
+    const heights = { W: "95%", REM: "72%", "N1-N2": "48%", N3: "25%" };
+    const colors = { W: "#ff9f0a", REM: "#64d2ff", "N1-N2": "#5e5ce6", N3: "#30d158" };
+    box.innerHTML = stages
+      .slice(0, 60)
+      .map((s) => `<div class="hypno-bar" title="${s}" style="height:${heights[s] || "40%"};background:${colors[s] || "#5e5ce6"}"></div>`)
+      .join("");
+  }
+
+  let sleepWaveTimer = null;
+  let esp32Port = null;
+  let esp32Reader = null;
+  let esp32Running = false;
+
+  function drawSleepVarianceTrace(vals) {
+    const canvas = document.getElementById("sleep-wave-canvas");
+    if (!canvas || !vals.length) return;
+    const ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const min = Math.min(...vals), max = Math.max(...vals), span = Math.max(max - min, 1e-3);
+    ctx.strokeStyle = "#30d158";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < vals.length; i++) {
+      const x = (i / Math.max(vals.length - 1, 1)) * w;
+      const y = h - 10 - ((vals[i] - min) / span) * (h - 20);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  function startSleepWaveAnim(bpm = 14.5) {
+    if (sleepWaveTimer) clearInterval(sleepWaveTimer);
+    const canvas = document.getElementById("sleep-wave-canvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let phase = 0;
+    sleepWaveTimer = setInterval(() => {
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.strokeStyle = "#64d2ff";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let x = 0; x < w; x++) {
+        const y = h / 2 + Math.sin((x / w) * Math.PI * 4 + phase) * (h * 0.3);
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      phase += (bpm / 60) * 0.35;
+    }, 40);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const btnEsp32 = document.getElementById("btn-esp32-connect");
+    const btnSleep = document.getElementById("btn-sleep-analyze");
+    const btnSleepStop = document.getElementById("btn-sleep-stop");
+
+    if (btnSleepStop) {
+      btnSleepStop.addEventListener("click", async () => {
+        if (sleepWaveTimer) clearInterval(sleepWaveTimer);
+        esp32Running = false;
+        try { if (esp32Reader) await esp32Reader.cancel(); } catch {}
+        try { if (esp32Port) await esp32Port.close(); } catch {}
+        esp32Reader = null; esp32Port = null;
+        const badge = document.getElementById("sleep-csi-badge");
+        if (badge) badge.textContent = "STOPPED";
+      });
+    }
+
+    if (btnEsp32) {
+      btnEsp32.addEventListener("click", async () => {
+        const badge = document.getElementById("sleep-csi-badge");
+        if (!("serial" in navigator)) {
+          if (badge) badge.textContent = "Web Serial unsupported — use Chrome/Edge";
+          return;
+        }
+        try {
+          if (badge) badge.textContent = "SELECT ESP32 PORT...";
+          esp32Port = await navigator.serial.requestPort();
+          await esp32Port.open({ baudRate: 115200 });
+          if (badge) badge.textContent = "ESP32 SERIAL LIVE";
+          esp32Running = true;
+          const decoder = new TextDecoderStream();
+          esp32Port.readable.pipeTo(decoder.writable).catch(() => {});
+          esp32Reader = decoder.readable.getReader();
+          let buf = "";
+          const csiBatch = [];
+          const varTrace = [];
+          while (esp32Running) {
+            const { value, done } = await esp32Reader.read();
+            if (done) break;
+            buf += value;
+            const lines = buf.split(/\r?\n/);
+            buf = lines.pop() || "";
+            for (const line of lines) {
+              if (!line.trim().startsWith("{")) continue;
+              try {
+                const pkt = JSON.parse(line);
+                if (Array.isArray(pkt.amplitudes) && pkt.amplitudes.length) {
+                  const mean = pkt.amplitudes.reduce((s, v) => s + v, 0) / pkt.amplitudes.length;
+                  const variance = pkt.amplitudes.reduce((s, v) => s + (v - mean) ** 2, 0) / pkt.amplitudes.length;
+                  varTrace.push(variance);
+                  if (varTrace.length > 100) varTrace.shift();
+                  drawSleepVarianceTrace(varTrace);
+                  csiBatch.push(pkt);
+                  if (csiBatch.length >= 40) {
+                    const batch = csiBatch.splice(0, csiBatch.length);
+                    fetch("/api/sleep/csi", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ csi_frames: batch, fs_hz: 20 }) })
+                      .then((r) => r.json())
+                      .then((d) => {
+                        document.getElementById("sleep-resp-val").textContent = d.respiration_bpm ?? "—";
+                        document.getElementById("sleep-apnea-val").textContent = d.apnea_events ?? "0";
+                        document.getElementById("sleep-eff-val").textContent = d.motion_arousals != null ? `${d.motion_arousals} arousals` : "Live";
+                      }).catch(() => {});
+                  }
+                }
+              } catch {}
+            }
+          }
+        } catch (err) {
+          if (badge) badge.textContent = "ESP32 DISCONNECTED";
+        }
+      });
+    }
+
+    if (btnSleep) {
+      btnSleep.addEventListener("click", async () => {
+        const badge = document.getElementById("sleep-csi-badge");
+        if (badge) badge.textContent = "DEMO ANALYZING...";
+        startSleepWaveAnim(14.2);
+        try {
+          const r = await fetch("/api/sleep/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) });
+          const d = await r.json();
+          document.getElementById("sleep-resp-val").textContent = d.respiration_bpm ?? "14.2";
+          document.getElementById("sleep-apnea-val").textContent = d.apnea_events ?? "0";
+          document.getElementById("sleep-eff-val").textContent = d.sleep_efficiency_pct ? `${d.sleep_efficiency_pct}%` : "88%";
+          renderHypnogram(d.stages || ["W", "N1-N2", "N3", "N3", "N1-N2", "REM", "N1-N2", "N3", "REM", "W"]);
+          if (badge) badge.textContent = "DEMO RADAR";
+        } catch {
+          document.getElementById("sleep-resp-val").textContent = "14.2";
+          document.getElementById("sleep-apnea-val").textContent = "1";
+          document.getElementById("sleep-eff-val").textContent = "88%";
+          renderHypnogram(["W", "N1-N2", "N3", "N3", "N1-N2", "REM", "N1-N2", "N3", "REM", "W"]);
+          if (badge) badge.textContent = "OFFLINE DEMO";
+        }
+      });
+    }
+
+    // ARED Gym CV
+    const canvas = document.getElementById("ared-cv-canvas");
+    const aredVideo = document.getElementById("ared-cv-video");
+    if (canvas && window.AredCV) {
+      const session = new window.AredCV.AredCVSession(
+        canvas,
+        (u) => {
+          document.getElementById("ared-reps-val").textContent = u.reps.length;
+          if (u.latest) {
+            document.getElementById("ared-velloss-val").textContent = `${u.latest.velocity_loss_pct}%`;
+            document.getElementById("ared-qual-val").textContent = `${u.latest.quality_score}/100`;
+            document.getElementById("ared-flags-val").textContent = u.latest.flags.length ? u.latest.flags.join(", ") : "Nominal";
+          }
+        },
+        async (summary) => {
+          const badge = document.getElementById("ared-cv-badge");
+          if (badge) badge.textContent = summary.velocity_loss_pct >= 20 ? "FATIGUE DETECTED" : "SET COMPLETE";
+          try {
+            await fetch("/api/exercise/set", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(summary) });
+          } catch {}
+        },
+        (status) => {
+          const badge = document.getElementById("ared-cv-badge");
+          if (badge) badge.textContent = status;
+        }
+      );
+      document.getElementById("btn-ared-camera")?.addEventListener("click", () => {
+        const ex = document.getElementById("ared-exercise-select")?.value || "squat";
+        session.startCamera(aredVideo, ex);
+      });
+      document.getElementById("btn-ared-replay")?.addEventListener("click", () => {
+        const ex = document.getElementById("ared-exercise-select")?.value || "squat";
+        session.startReplay(ex);
+      });
+      document.getElementById("btn-ared-stop")?.addEventListener("click", () => {
+        session.stop(true);
+        document.getElementById("ared-cv-badge").textContent = "STOPPED";
+      });
+    }
+
+    // Passive Facial CV
+    if (window.FaceCV) {
+      const faceCanvas = document.getElementById("face-cv-canvas");
+      const faceVideo = document.getElementById("face-cv-video");
+      const faceSession = new window.FaceCV.FaceCVSession(
+        faceCanvas,
+        (u) => {
+          document.getElementById("face-hr-val").textContent = u.hrBpm;
+          document.getElementById("face-perclos-val").textContent = `${u.perclosPct}%`;
+          document.getElementById("face-palp-val").textContent = u.palpebralRatio;
+          document.getElementById("face-prog-val").textContent = `${u.progressPct}%`;
+        },
+        (done) => {
+          const badge = document.getElementById("face-cv-badge");
+          if (badge) badge.textContent = done.fluidShiftFlag ? "FLUID SHIFT FLAG" : "COMPLETE";
+        },
+        (status) => {
+          const badge = document.getElementById("face-cv-badge");
+          if (badge) badge.textContent = status;
+        }
+      );
+      document.getElementById("btn-face-camera")?.addEventListener("click", () => {
+        faceSession.startCamera(faceVideo);
+      });
+      document.getElementById("btn-face-replay")?.addEventListener("click", () => {
+        faceSession.startReplay();
+      });
+      document.getElementById("btn-face-stop")?.addEventListener("click", () => {
+        faceSession.stop();
+        document.getElementById("face-cv-badge").textContent = "STOPPED";
+      });
+    }
+
+    initClinicalMedHub();
+  });
+
+  const medhubState = {
+    mode: "simple",
+    data: null,
+    selectedPathwayId: null,
+    checkedActions: new Set(),
+  };
+
+  function _escHtml(val) {
+    return String(val ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /** Map MedHub risk tiers & silo statuses to ASTRA-Core native VisionOS classes. */
+  function _medhubTierStyle(raw) {
+    const t = String(raw || "LOW").toUpperCase();
+    if (t === "CRITICAL") {
+      return { pill: "pill-critical", card: "card-critical", bar: "crit" };
+    }
+    if (t === "ELEVATED" || t === "WATCH") {
+      return { pill: "pill-warning", card: "card-warning", bar: "high" };
+    }
+    return { pill: "pill-nominal", card: "card-nominal", bar: "" };
+  }
+
+  function setMedHubMode(mode) {
+    const next = mode === "depth" ? "depth" : "simple";
+    medhubState.mode = next;
+    document.getElementById("medhub-mode-simple")?.classList.toggle("active", next === "simple");
+    document.getElementById("medhub-mode-depth")?.classList.toggle("active", next === "depth");
+    document.getElementById("medhub-simple-pane")?.classList.toggle("hidden", next !== "simple");
+    document.getElementById("medhub-depth-pane")?.classList.toggle("hidden", next !== "depth");
+  }
+
+  function syncMedHubScenarioUI(scenarioId) {
+    const sid = scenarioId || "nominal_iss";
+    const sel = document.getElementById("medhub-scenario-select");
+    if (sel && sel.value !== sid) {
+      const hasOpt = Array.from(sel.options || []).some((o) => o.value === sid);
+      if (hasOpt) sel.value = sid;
+    }
+    document.querySelectorAll(".medhub-preset-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.scenario === sid);
+    });
+  }
+
+  function renderMedHubCausalBox(pathway) {
+    const box = document.getElementById("medhub-causal-box");
+    if (!box) return;
+    if (!pathway) {
+      box.textContent = "Select a pathway above to see which silo biomarkers combine and the scientific basis.";
+      return;
+    }
+    const linked = (pathway.silos_linked || []).join(" ↔ ");
+    const signals = (pathway.converging_signals || [])
+      .map((sig) => `<li>${_escHtml(sig)}</li>`)
+      .join("");
+    const style = _medhubTierStyle(pathway.tier);
+    box.innerHTML = `
+      <div class="medhub-causal-head">
+        <strong>${_escHtml(pathway.title)}</strong>
+        <span class="triage-pill ${style.pill}">${_escHtml(pathway.score)}/100 · ${_escHtml(pathway.tier)}</span>
+      </div>
+      <div class="medhub-causal-silos"><strong>Silos Linked:</strong> ${_escHtml(linked)}</div>
+      <ul class="medhub-signals-list">${signals}</ul>
+      <div class="medhub-causal-science"><strong>Science Basis:</strong> ${_escHtml(pathway.science_basis)}</div>
+      <div class="medhub-causal-action"><strong>Pre-Symptomatic Action:</strong> ${_escHtml(pathway.pre_symptomatic_action)}</div>
+    `;
+  }
+
+  function renderMedHubActions(data, pathways) {
+    const listEl = document.getElementById("medhub-actions-list");
+    if (!listEl) return;
+    const sid = data.scenario_id || "nominal_iss";
+    const elevated = pathways.filter((p) => Number(p.score) >= 25);
+    const items = elevated.length
+      ? elevated.map((p) => ({
+          key: `${sid}:${p.id}`,
+          text: `${p.title}: ${p.pre_symptomatic_action}`,
+        }))
+      : [
+          {
+            key: `${sid}:routine:hydration`,
+            text: "Maintain daily hydration >= 2.2 L/day and complete scheduled ARED resistive loading.",
+          },
+          {
+            key: `${sid}:routine:eclss`,
+            text: "Keep cabin CDRA ppCO2 < 2.5 mmHg and verify acoustic hearing protection compliance.",
+          },
+          {
+            key: `${sid}:routine:labs`,
+            text: "Continue scheduled OSDR-aligned i-STAT, urinalysis & contactless sleep radar checks.",
+          },
+        ];
+
+    listEl.innerHTML = items
+      .map((item, idx) => {
+        const isChecked = medhubState.checkedActions.has(item.key);
+        return `
+          <label class="action-check-item ${isChecked ? "checked" : ""}">
+            <input type="checkbox" data-action-key="${_escHtml(item.key)}" ${isChecked ? "checked" : ""} />
+            <span class="action-step-num">${idx + 1}</span>
+            <span class="action-step-text">${_escHtml(item.text)}</span>
+          </label>
+        `;
+      })
+      .join("");
+
+    listEl.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
+      cb.addEventListener("change", (e) => {
+        const key = e.target.dataset.actionKey;
+        if (!key) return;
+        if (e.target.checked) medhubState.checkedActions.add(key);
+        else medhubState.checkedActions.delete(key);
+        e.target.closest(".action-check-item")?.classList.toggle("checked", e.target.checked);
+      });
+    });
+  }
+
+  function renderMedHubPathwaysCompact(pathways) {
+    const container = document.getElementById("medhub-pathways-compact");
+    if (!container) return;
+
+    if (!pathways.length) {
+      container.innerHTML = "";
+      renderMedHubCausalBox(null);
+      return;
+    }
+
+    if (!pathways.some((p) => p.id === medhubState.selectedPathwayId)) {
+      medhubState.selectedPathwayId = pathways[0].id;
+    }
+
+    container.innerHTML = pathways
+      .map((p) => {
+        const score = Math.max(0, Math.min(100, Math.round(Number(p.score) || 0)));
+        const style = _medhubTierStyle(p.tier);
+        const isSelected = p.id === medhubState.selectedPathwayId;
+        return `
+          <div class="sbar-row medhub-pathway-row ${isSelected ? "active" : ""}" role="button" tabindex="0" aria-pressed="${isSelected}" data-pathway-id="${_escHtml(p.id)}">
+            <span class="medhub-sbar-title">${_escHtml(p.title)}</span>
+            <div class="sbar-track"><div class="sbar-fill ${style.bar}" style="width:${score}%"></div></div>
+            <span class="sbar-tag">${_escHtml(score)}/100 · ${_escHtml(p.tier)}</span>
+          </div>
+        `;
+      })
+      .join("");
+
+    const selectPathway = (pid) => {
+      const match = pathways.find((p) => p.id === pid);
+      if (!match) return;
+      medhubState.selectedPathwayId = pid;
+      container.querySelectorAll(".sbar-row").forEach((row) => {
+        const on = row.dataset.pathwayId === pid;
+        row.classList.toggle("active", on);
+        row.setAttribute("aria-pressed", String(on));
+      });
+      renderMedHubCausalBox(match);
+    };
+
+    container.querySelectorAll(".sbar-row").forEach((row) => {
+      row.addEventListener("click", () => selectPathway(row.dataset.pathwayId));
+      row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          selectPathway(row.dataset.pathwayId);
+        }
+      });
+    });
+
+    const activePathway = pathways.find((p) => p.id === medhubState.selectedPathwayId) || pathways[0];
+    renderMedHubCausalBox(activePathway);
+  }
+
+  function renderClinicalHub(data) {
+    if (!data) return;
+    medhubState.data = data;
+    if (data.scenario_id) syncMedHubScenarioUI(data.scenario_id);
+
+    const pathways = Array.isArray(data.pathways) ? data.pathways : [];
+    const osdrComps = Array.isArray(data.osdr_comparisons) ? data.osdr_comparisons : [];
+    const top = pathways[0] || null;
+    const overallScore = Number(data.overall_coupled_risk_score ?? 0);
+    const topScore = Number(top?.score ?? overallScore);
+    const tier = String(data.overall_coupled_tier || "LOW").toUpperCase();
+    const tierStyle = _medhubTierStyle(tier);
+
+    const heroEl = document.getElementById("medhub-hero-card");
+    if (heroEl) {
+      heroEl.classList.remove("card-nominal", "card-warning", "card-critical");
+      heroEl.classList.add(tierStyle.card);
+    }
+
+    const scoreEl = document.getElementById("medhub-overall-score");
+    const tierEl = document.getElementById("medhub-overall-tier");
+    const headlineEl = document.getElementById("medhub-headline");
+    const provEl = document.getElementById("medhub-provenance");
+    const kpiPrimaryEl = document.getElementById("medhub-kpi-primary");
+    const kpiRcvEl = document.getElementById("medhub-kpi-rcv");
+    const linksEl = document.getElementById("medhub-live-links");
+
+    if (scoreEl) scoreEl.textContent = `${data.overall_coupled_risk_score ?? 0} / 100`;
+    if (tierEl) {
+      tierEl.textContent = `${tier} RISK`;
+      tierEl.className = `triage-pill ${tierStyle.pill}`;
+    }
+    if (headlineEl) {
+      headlineEl.textContent = top && topScore >= 25 ? top.title : "All 6 ISS medical silos nominal";
+    }
+    if (provEl) provEl.textContent = data.provenance_note || "";
+    if (kpiPrimaryEl) {
+      kpiPrimaryEl.textContent =
+        top && topScore >= 25
+          ? `${top.score}/100 · ${String(top.title || "Pathway").split(" ")[0]}`
+          : topScore > 0
+            ? `Nominal (${topScore}/100)`
+            : "Nominal (0/100)";
+    }
+    if (kpiRcvEl) {
+      const rcvHits = osdrComps.filter((c) => c.exceeds_rcv === true).length;
+      kpiRcvEl.textContent = `${rcvHits} / ${osdrComps.length}`;
+    }
+    if (linksEl) {
+      const links = Array.isArray(data.live_links) ? data.live_links : [];
+      linksEl.innerHTML = links.length
+        ? links.map((l) => `<span class="triage-pill pill-nominal">LIVE · ${_escHtml(l)}</span>`).join("")
+        : `<span class="triage-pill pill-nominal">OSDR + DONKI Cached</span>`;
+    }
+
+    // Sync override inputs with returned raw_state
+    const raw = data.raw_state || {};
+    const poc = raw.poc_labs || {};
+    const img = raw.imaging || {};
+    const pex = raw.pulmonary_exercise || {};
+    const env = raw.environment || {};
+    const setVal = (id, v) => {
+      const el = document.getElementById(id);
+      if (el && v !== undefined && v !== null) el.value = v;
+    };
+    setVal("mh-ov-ica", poc.ica_mmol_l);
+    setVal("mh-ov-hb", poc.hb_g_dl);
+    setVal("mh-ov-hct", poc.hct_pct);
+    setVal("mh-ov-usg", poc.urine_sg);
+    setVal("mh-ov-onsd", img.onsd_mm);
+    setVal("mh-ov-jugular", img.jugular_flow_grade || "normal");
+    setVal("mh-ov-cortisol", poc.saliva_cortisol_nmol_l);
+    setVal("mh-ov-hydration", pex.hydration_l_day);
+    setVal("mh-ov-co2", env.ppco2_mmhg);
+
+    // Mode 1: Crew Action checklist + 6 coupled pathways mini-bars
+    renderMedHubActions(data, pathways);
+    renderMedHubPathwaysCompact(pathways);
+
+    // Mode 2.1: Render 6 Unified Silos
+    const silosGrid = document.getElementById("medhub-silos-grid");
+    if (silosGrid) {
+      silosGrid.innerHTML = (data.silos || [])
+        .map((s) => {
+          const st = String(s.status || "NOMINAL").toUpperCase();
+          const stStyle = _medhubTierStyle(st);
+          const metricsHtml = String(s.key_metrics || "")
+            .split(" · ")
+            .filter(Boolean)
+            .map((part) => {
+              const idx = part.indexOf(" ");
+              const k = idx > 0 ? part.slice(0, idx) : part;
+              const v = idx > 0 ? part.slice(idx + 1) : "";
+              return `<div class="medhub-kv-item"><span class="medhub-kv-k">${_escHtml(k)}</span><span class="medhub-kv-v">${_escHtml(v)}</span></div>`;
+            })
+            .join("");
+          return `
+            <article class="sub-glass medhub-silo-card">
+              <div class="medhub-silo-head">
+                <h3>${_escHtml(s.name)}</h3>
+                <span class="triage-pill ${stStyle.pill}">${_escHtml(st)}</span>
+              </div>
+              <div class="medhub-devices">${_escHtml(s.devices)}</div>
+              <div class="medhub-metrics-kv">${metricsHtml}</div>
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    // Mode 2.2: Render 6 Coupled Pre-Symptomatic Pathways
+    const pathwaysEl = document.getElementById("medhub-pathways-list");
+    if (pathwaysEl) {
+      pathwaysEl.innerHTML = pathways
+        .map((p) => {
+          const pStyle = _medhubTierStyle(p.tier);
+          const sigs = (p.converging_signals || [])
+            .map((sig) => `<li>${_escHtml(sig)}</li>`)
+            .join("");
+          const linked = (p.silos_linked || []).join(" ↔ ");
+          return `
+            <article class="sub-glass medhub-pathway-card">
+              <div class="medhub-pathway-head">
+                <div>
+                  <div class="eyebrow">${_escHtml(linked)}</div>
+                  <h3>${_escHtml(p.title)}</h3>
+                </div>
+                <div class="medhub-pathway-score">
+                  <strong>${_escHtml(p.score)}/100</strong>
+                  <span class="triage-pill ${pStyle.pill}">${_escHtml(p.tier)}</span>
+                </div>
+              </div>
+              <ul class="medhub-signals-list">${sigs}</ul>
+              <p class="medhub-science-note">Evidence: ${_escHtml(p.science_basis)}</p>
+              <div class="medhub-action-box"><strong>Pre-Symptomatic Action:</strong> ${_escHtml(p.pre_symptomatic_action)}</div>
+            </article>
+          `;
+        })
+        .join("");
+    }
+
+    // Mode 2.3: Render Real NASA OSDR Benchmark Comparisons
+    const osdrBody = document.getElementById("medhub-osdr-tbody");
+    if (osdrBody) {
+      osdrBody.innerHTML = osdrComps
+        .map((row) => {
+          const sign = row.delta_vs_osdr_pct > 0 ? "+" : "";
+          const flagCls = row.exceeds_rcv ? "pill-warning" : "pill-nominal";
+          const flagTxt = row.exceeds_rcv
+            ? `EXCEEDS RCV (${row.rcv_threshold_pct}%)`
+            : `WITHIN RCV (${row.rcv_threshold_pct}%)`;
+          return `
+            <tr>
+              <td><strong>${_escHtml(row.label)}</strong> <span class="medhub-devices">(${_escHtml(row.study)})</span></td>
+              <td>${_escHtml(row.device)}</td>
+              <td><strong>${_escHtml(row.current)}</strong> ${_escHtml(row.unit)}</td>
+              <td>${_escHtml(row.osdr_preflight_median)} ${_escHtml(row.unit)}</td>
+              <td>${_escHtml(row.osdr_r1_postflight_median)} ${_escHtml(row.unit)}</td>
+              <td>${sign}${_escHtml(row.delta_vs_osdr_pct)}%</td>
+              <td><span class="triage-pill ${flagCls}">${_escHtml(flagTxt)}</span></td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    // Mode 2.4: Render Real NASA CCMC DONKI SEP Feed
+    const donkiEl = document.getElementById("medhub-donki-list");
+    if (donkiEl) {
+      const events = data.donki_sep_events || [];
+      donkiEl.innerHTML = events.length
+        ? events
+            .map(
+              (ev) => `
+                <div class="sub-glass medhub-donki-item">
+                  <div><strong>${_escHtml(ev.sep_id)}</strong> · ${_escHtml(ev.event_time)}</div>
+                  <div class="medhub-devices">Instruments: ${_escHtml((ev.instruments || []).join(", ") || "GOES")} · Linked CME/Flares: ${_escHtml(ev.linked_count)}</div>
+                </div>
+              `
+            )
+            .join("")
+        : `<div class="sub-glass medhub-donki-item">No cached DONKI SEP events found.</div>`;
+    }
+  }
+
+  async function loadClinicalHub(scenarioOverride) {
+    const sel = document.getElementById("medhub-scenario-select");
+    const scenarioId =
+      typeof scenarioOverride === "string" && scenarioOverride
+        ? scenarioOverride
+        : sel?.value || "nominal_iss";
+    syncMedHubScenarioUI(scenarioId);
+    try {
+      const res = await fetch(`/api/clinical/hub?scenario_id=${encodeURIComponent(scenarioId)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderClinicalHub(data);
+    } catch (err) {
+      console.error("Failed loading ISS MedHub:", err);
+      const provEl = document.getElementById("medhub-provenance");
+      if (provEl) provEl.textContent = `MedHub API error: ${err.message}`;
+    }
+  }
+
+  async function evaluateClinicalHubFromUI() {
+    const sel = document.getElementById("medhub-scenario-select");
+    const scenarioId = sel ? sel.value : "nominal_iss";
+    const numVal = (id) => {
+      const v = parseFloat(document.getElementById(id)?.value);
+      return Number.isFinite(v) ? v : undefined;
+    };
+    const poc_labs = {};
+    const imaging = {};
+    const pulmonary_exercise = {};
+    const environment = {};
+
+    const ica = numVal("mh-ov-ica");
+    const hb = numVal("mh-ov-hb");
+    const hct = numVal("mh-ov-hct");
+    const usg = numVal("mh-ov-usg");
+    const onsd = numVal("mh-ov-onsd");
+    const jug = document.getElementById("mh-ov-jugular")?.value;
+    const cortisol = numVal("mh-ov-cortisol");
+    const hydr = numVal("mh-ov-hydration");
+    const co2 = numVal("mh-ov-co2");
+
+    if (ica !== undefined) poc_labs.ica_mmol_l = ica;
+    if (hb !== undefined) poc_labs.hb_g_dl = hb;
+    if (hct !== undefined) poc_labs.hct_pct = hct;
+    if (usg !== undefined) poc_labs.urine_sg = usg;
+    if (cortisol !== undefined) poc_labs.saliva_cortisol_nmol_l = cortisol;
+    if (onsd !== undefined) imaging.onsd_mm = onsd;
+    if (jug) imaging.jugular_flow_grade = jug;
+    if (hydr !== undefined) pulmonary_exercise.hydration_l_day = hydr;
+    if (co2 !== undefined) environment.ppco2_mmhg = co2;
+
+    try {
+      const res = await fetch("/api/clinical/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          scenario_id: scenarioId,
+          overrides: { poc_labs, imaging, pulmonary_exercise, environment },
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      renderClinicalHub(data);
+    } catch (err) {
+      console.error("Failed evaluating ISS MedHub overrides:", err);
+      const provEl = document.getElementById("medhub-provenance");
+      if (provEl) provEl.textContent = `MedHub evaluate error: ${err.message}`;
+    }
+  }
+
+  function initClinicalMedHub() {
+    window.loadClinicalHub = loadClinicalHub;
+    document.getElementById("medhub-mode-simple")?.addEventListener("click", () => setMedHubMode("simple"));
+    document.getElementById("medhub-mode-depth")?.addEventListener("click", () => setMedHubMode("depth"));
+    document.getElementById("btn-medhub-open-depth")?.addEventListener("click", () => setMedHubMode("depth"));
+
+    document.querySelectorAll(".medhub-preset-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sid = btn.dataset.scenario || "nominal_iss";
+        syncMedHubScenarioUI(sid);
+        loadClinicalHub(sid);
+      });
+    });
+
+    document.getElementById("medhub-scenario-select")?.addEventListener("change", (e) => {
+      const sid = e.target.value || "nominal_iss";
+      syncMedHubScenarioUI(sid);
+      loadClinicalHub(sid);
+    });
+    document.getElementById("btn-medhub-refresh")?.addEventListener("click", () => loadClinicalHub());
+    document.getElementById("btn-medhub-evaluate")?.addEventListener("click", evaluateClinicalHubFromUI);
+
+    setMedHubMode(medhubState.mode);
+    loadClinicalHub();
+  }
+})();
