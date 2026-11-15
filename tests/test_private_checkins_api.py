@@ -32,7 +32,9 @@ def test_authentication_owner_scope_and_session_expiry(tmp_path, monkeypatch):
     assert first.post("/api/private/checkins", json={"mood": 1, "stress": 5}, headers={"Origin": "http://evil.test"}).status_code == 403
     assert first.post("/api/private/dismiss", json={"triplet_key": "x"}, headers={"Origin": "http://testserver", "Sec-Fetch-Site": "cross-site"}).status_code == 403
     assert first.post("/api/private/logout", json={}, headers={"Origin": "http://evil.test"}).status_code == 403
-    assert _login(first, crew_a, "wrong-password").status_code == 200
+    intruder = TestClient(app)
+    assert _login(intruder, crew_a, "wrong-password").status_code == 401
+    assert intruder.get("/api/private/checkins").status_code == 401
     assert first.get("/api/private/checkins").headers["cache-control"] == "no-store, private"
     assert _add(first).status_code == 200
 
