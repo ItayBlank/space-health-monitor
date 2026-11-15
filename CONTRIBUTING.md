@@ -5,6 +5,14 @@ pull request against `main`. Keep each PR focused and include `Closes #N` when i
 completes an issue. All collaborators with write access can merge through a PR;
 review approvals are optional, but the required CI checks must pass.
 
+## Current implementation target
+
+New features target the web app: `server.py`, `astra_core/`, and `static/`.
+Use shared `hal2030` services where appropriate. `main.py` and `hal2030/ui/` are
+the retained desktop prototype. Read [feature status](docs/PROJECT_VISION.md)
+before claiming an issue; superseded proposals must not be marked implemented.
+Include browser checks for web changes: the executable smoke test covers desktop.
+
 ## Contributor checklist
 
 - Declare runtime dependencies in `requirements.txt` or a requirements file it

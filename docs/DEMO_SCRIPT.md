@@ -1,4 +1,28 @@
-# Three-minute demonstration
+# Demonstration guide
+
+## Current web walkthrough
+
+Launch the web console using [README](../README.md), then open localhost:8000.
+Use the synthetic scenarios for a repeatable walkthrough.
+
+1. **Glance / Actions:** select crew and a scenario. Distinguish synthetic scenario
+   telemetry from research replay and explain that recommendations are illustrative.
+2. **Heart / RadLab:** show physiological replay and modeled exposure with cabin
+   schedules. Describe derived estimates and storm multipliers as model outputs.
+3. **Sensors.** Show the calibrated vision flow. In the [three-minute PVT](PVT.md),
+   compare **Short sleep**, **Already tested**, and **Missing sleep log**. The
+   recommendation supports crew review.
+4. **Link:** inspect a locally queued report and simulated delivery. There is no
+   real ground-control delivery acknowledgement.
+5. **HAL.** Open Family Archive and play the [family-message demo](FAMILY_MESSAGE_DEMO.md).
+   For live speech, install the local voice models and enable the microphone.
+6. **Check-ins.** Follow the [local setup](PRIVATE_CHECKINS.md), sign in, and use
+   **Show synthetic examples** to compare an isolated dip with sustained change.
+
+## Legacy desktop three-minute demonstration
+
+The walkthrough below applies to the retained PySide6 app (`main.py`). Its page
+names and voice placeholders must not be presented as web behavior.
 
 ## 0:00–0:25 — One shared health picture
 

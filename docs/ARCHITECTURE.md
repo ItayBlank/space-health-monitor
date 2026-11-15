@@ -1,5 +1,41 @@
 # Architecture and extension guide
 
+## Active web application
+
+`server.py` serves `static/index.html` and the FastAPI endpoints. `static/app.js`
+owns browser navigation, selected crew, scenario state, charts and interactive
+test flows; `static/styles.css` owns presentation.
+
+| Component | Responsibility |
+| --- | --- |
+| `astra_core/hal_bridge.py` | Adapts the existing telemetry, alert, vision and local downlink services to HTTP handlers. |
+| `astra_core/vitals.py` | Physiological research replay and derived signal metrics. |
+| `astra_core/radiation.py` | Module/orbit model and schedule-weighted exposure comparison. |
+| `astra_core/readiness.py` | Combines pillar results; some sleep/mood content remains placeholder/demo state. |
+| `astra_core/checkins.py`, `static/checkins.js` | Local check-in sign-in, owner-scoped history, trend follow-up, and consent-based consult requests. |
+| `astra_core/pvt.py`, `astra_core/pvt_api.py`, `static/pvt.js` | Per-crew event and sleep logs, PVT recommendation, browser timing, and server-side scoring. |
+| `hal2030/voice_engine.py` | Local Kokoro synthesis and Faster-Whisper transcription; missing weights can trigger downloads. |
+| `hal2030/vision.py`, `hal2030/downlink.py` | Shared vision scoring/report and persistent simulated transport logic. |
+
+The server and bridge have process-level caches. The [Check-ins view](PRIVATE_CHECKINS.md)
+authenticates separately and keeps its SQLite records out of shared readiness,
+telemetry, companion context, and routine downlink. Consult requests record
+selected entries locally with explicit consent.
+
+The [three-minute PVT](PVT.md) uses a browser monotonic clock for response timing
+and UTC for event windows and records. It stores demo records by crew ID in a
+local JSON file for a single server process. The separate five-trial reaction
+demo cannot create a completed PVT record.
+
+Python CI covers backend/core tests. The PyInstaller and screenshot checks launch
+`main.py`; they do not run browser interactions. Fully offline web delivery also
+requires addressing external Chart.js/font resources in `static/index.html`.
+
+## Legacy desktop architecture
+
+The sections below describe `main.py` and `hal2030/ui/`, not the web server.
+They remain useful for shared-service history and the retained desktop prototype.
+
 ## Data flow
 
 `main.py` creates the Qt application, opens a `CsvReplaySource`, and constructs `MainWindow`. A single 100 ms GUI timer advances the replay clock. The source releases six 1 Hz `Sample` summaries for the current mission second; no UI code invents a fresh reading independently.
