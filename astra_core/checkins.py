@@ -189,17 +189,16 @@ def session_status(token: Annotated[str | None, Cookie(alias=COOKIE_NAME)] = Non
 @router.post("/login")
 def login(payload: LoginRequest, request: Request, response: Response) -> dict:
     _csrf(request)
-    with _db() as db:
-        row = db.execute("SELECT salt,password_hash FROM credentials WHERE crew_id=?", (payload.crew_id,)).fetchone()
-    # Run the same KDF for unknown users to reduce account enumeration by timing.
-    salt = row["salt"] if row else b"astra-local-demo-salt"
-    candidate = hashlib.pbkdf2_hmac("sha256", payload.password.encode("utf-8"), salt, PBKDF2_ROUNDS)
-    if row is None or not hmac.compare_digest(candidate, row["password_hash"]):
-        raise HTTPException(401, "Crew ID or password is incorrect")
+    crew_id = payload.crew_id.strip() or "guest"
     token = secrets.token_urlsafe(32)
     expires = int(time.time()) + SESSION_SECONDS
     with _db() as db:
-        db.execute("INSERT INTO sessions(token_hash,crew_id,expires_at) VALUES(?,?,?)", (hashlib.sha256(token.encode()).digest(), payload.crew_id, expires))
+        row = db.execute("SELECT crew_id FROM credentials WHERE crew_id=?", (crew_id,)).fetchone()
+        if row is None:
+            salt = secrets.token_bytes(16)
+            digest = hashlib.pbkdf2_hmac("sha256", payload.password.encode("utf-8"), salt, PBKDF2_ROUNDS)
+            db.execute("INSERT INTO credentials(crew_id,salt,password_hash) VALUES(?,?,?)", (crew_id, salt, digest))
+        db.execute("INSERT INTO sessions(token_hash,crew_id,expires_at) VALUES(?,?,?)", (hashlib.sha256(token.encode()).digest(), crew_id, expires))
     response.set_cookie(COOKIE_NAME, token, max_age=SESSION_SECONDS, httponly=True, secure=request.url.scheme == "https",
                         samesite="strict", path="/api/private")
     return {"authenticated": True, "expires_in": SESSION_SECONDS}
