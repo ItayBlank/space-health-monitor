@@ -2,7 +2,7 @@
 
 A local Python web console (with a companion PySide6 desktop prototype) for the **NASA Space Apps Challenge 2026: Create Health Monitoring Software for Astronauts on Space Missions**.
 
-**ASTRA-Core + HAL2030** pairs a FastAPI telemetry engine (`server.py`, `astra_core/`, `hal2030/`) with a Liquid Glass web interface (`static/`) featuring Day/Night mission themes, crew vitals, PhysioNet BIDMC/PTT physiological replay, ISS REM/DOSTEL space-radiation shielding analysis, guided near-vision testing and a five-trial reaction demo, delayed Mars/Earth telemetry downlink simulation, and an offline CPU natural voice engine (**Kokoro-82M INT8** TTS + **Faster-Whisper tiny.en** STT).
+**ASTRA-Core + HAL2030** pairs a FastAPI telemetry engine (`server.py`, `astra_core/`, `hal2030/`) with a Liquid Glass web interface (`static/`) featuring Day/Night mission themes, crew vitals, PhysioNet BIDMC/PTT physiological replay, ISS REM/DOSTEL space-radiation shielding analysis, guided near-vision testing, pre-task three-minute PVT, and private mood and stress check-ins, delayed Mars/Earth telemetry downlink simulation, and an offline CPU natural voice engine (**Kokoro-82M INT8** TTS + **Faster-Whisper tiny.en** STT).
 
 **Everything in the application is in English.** Supplied scenario telemetry, portraits, and crew communications are synthetic/educational or derived from research datasets. The source registry (`data/sources.json`) covers the earlier assets; provenance for the new PhysioNet/radiation data and natural-voice models still needs reconciliation. Voice inference can run locally after installing its dependencies and weights. The current HTML still loads Chart.js and fonts from external CDNs; a fresh fully offline browser session is not yet guaranteed.
 
@@ -52,7 +52,8 @@ Open `http://127.0.0.1:8000` in Chrome, Edge, or Firefox.
 | **Actions** | Crew-filtered operational & medical check-off protocols reactive to live alert severity. |
 | **Heart (Cardiovascular)** | Individual 1 Hz vitals, activity-aware rules, synthetic ECG/PPG strips, and **PhysioNet BIDMC / PTT** dataset replay. |
 | **RadLab (Radiation)** | **ISS REM 2024 & DOSTEL** orbital dose-rate timeline, module shielding simulation, and Solar Particle Event (SPE) / GCR presets. |
-| **Sensors & SANS** | All 42 sensor channels with filters, five-trial reaction demo (not the planned three-minute PVT), **SANS** optical/Amsler exam with voice readout, and Guided Near-Vision check. |
+| **Sensors & SANS** | All 42 sensor channels with filters, [mission-aware three-minute PVT](docs/PVT.md) and a separate five-trial reaction demo, **SANS** optical/Amsler exam with voice readout, and Guided Near-Vision check. |
+| **Check-ins** | [Local sign-in, personal mood/stress history, illustrative trend follow-up, and consent-based consult requests](docs/PRIVATE_CHECKINS.md). |
 | **Downlink (Mission Link)** | Durable local JSON snapshot queue (`runtime/downlink/`) with offline toggle and **Local · 3 s** / **Mars · 22 min** latency presets. |
 | **HAL2030 Companion** | Six isolated crew chat sessions with local **Kokoro-82M INT8** natural speech output, **Faster-Whisper tiny.en** microphone transcription, and IEC 60601-1-8 / NASA-STD-3001 gentle marimba chimes + anti-overload critical callouts (`Voice` / `Chime` / `Muted`). |
 
@@ -60,14 +61,13 @@ Open `http://127.0.0.1:8000` in Chrome, Edge, or Firefox.
 
 ## Feature status and next work
 
-See [the web roadmap](docs/PROJECT_VISION.md) for implemented, partial and superseded
-work. Next: [private mood/stress check-ins (#11)](https://github.com/ItayBlank/space-health-monitor/issues/11)
-and [pre-task three-minute PVT (#12)](https://github.com/ItayBlank/space-health-monitor/issues/12).
-The older combined issue #1 is superseded. Radiation #2 and hatch/CO2 #3 remain
-open; the existence of their dashboard panels does not fulfill every criterion.
+See [the web roadmap](docs/PROJECT_VISION.md) for implemented, partial, and
+superseded work. The [private check-ins](docs/PRIVATE_CHECKINS.md) and
+[pre-task PVT](docs/PVT.md) replaced the earlier combined issue #1. Radiation #2
+and hatch/CO2 #3 remain open.
 
-Current chat separation is a demo UI feature, not authenticated confidentiality.
-The forthcoming mood/stress feature must enforce owner access and explicit sharing.
+The Check-ins view requires its own sign-in. The HAL companion separates demo
+chat sessions by crew selection and does not authenticate users.
 The CI executable and screenshot smoke test target the legacy desktop app;
 they do not establish browser workflow or web microphone correctness.
 
@@ -140,6 +140,8 @@ Latency runs on elapsed wall time, independently of replay speed or seeking. It 
 This build has **no NASA network endpoint**. Receipt is simulated locally. **Export snapshot** writes a real, inspectable JSON file. Health packets contain sensor summaries, activity, availability and alerts; companion messages are excluded.
 
 ## HAL2030 Voice Engine & Family Archive
+
+- **Family Message Demo:** Compare original CREMA-D recordings with calibrated LivePortrait reconstructions that reuse one portrait. The demo includes a low-bitrate video benchmark and offline rendering commands. See the [demo and benchmark guide](docs/FAMILY_MESSAGE_DEMO.md).
 
 - **Web Console (`server.py`):** Provides isolated six-crew companion sessions backed by real local CPU voice inference via `/api/hal/voice/status`, `/api/hal/voice/speak` (**Kokoro-82M INT8** WAV synthesis), and `/api/hal/voice/transcribe` (**Faster-Whisper tiny.en** speech-to-text). Crew health packets remain excluded from private companion chat, and family-archive replies are clearly labeled as simulations.
 - **Legacy Desktop Prototype (`main.py`):** Retains simulated voice-state preview and offline Vosk vision-check recognition.

@@ -4,11 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ASTRA-Core | ISS Cabin Tablet HUD</title>
+  <script defer src="/static/pvt.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="stylesheet" href="/static/checkins.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/pvt.css" />
 </head>
 <body class="theme-day state-nominal glance-active">
   <!-- Scenic depth backdrop frosted through the VisionOS glass slate -->
@@ -57,6 +60,11 @@
       <button id="rail-companion" class="rail-btn" title="HAL2030 Private Cabin Companion">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor" opacity="0.7"/></svg>
         <span class="rail-lbl">HAL</span>
+      </button>
+
+      <button id="rail-checkins" class="rail-btn" title="Private mood and stress check-ins">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-8-4.5-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 6.5-8 11-8 11Z"/><path d="M8 12h2l1-2 2 4 1-2h2"/></svg>
+        <span class="rail-lbl">Check-ins</span>
       </button>
 
       <button id="rail-sim" class="rail-btn" title="24h Companion Simulation">
@@ -254,6 +262,65 @@
             <div id="notif-list" class="notif-list"></div>
           </div>
         </aside>
+      </section>
+
+      <section id="view-checkins" class="level-pane hidden" aria-label="Private mood and stress check-ins">
+        <div class="checkins-page">
+          <div class="sub-glass checkins-lock" id="checkins-lock">
+            <span class="triage-pill pill-nominal">PRIVATE · OWNER SIGN-IN REQUIRED</span>
+            <h2>My mood &amp; stress check-ins</h2>
+            <p>Sign in with the local credential provisioned for you. Crew selectors elsewhere in this demo do not grant access here.</p>
+            <form id="checkins-login" class="checkins-form">
+              <label>Crew ID<input id="checkins-crew-id" autocomplete="username" required maxlength="64" /></label>
+              <label>Password<input id="checkins-password" type="password" autocomplete="current-password" required /></label>
+              <button class="btn-glass-pri" type="submit">Unlock my check-ins</button>
+            </form>
+            <p id="checkins-login-error" class="checkins-error" role="alert"></p>
+            <small>Local demo data is readable by the computer and server administrators. This is not production confidentiality.</small>
+          </div>
+
+          <div id="checkins-private" class="hidden">
+            <div class="checkins-toolbar">
+              <div><span class="triage-pill pill-nominal">PRIVATE · SIGNED IN</span><span id="checkins-owner"></span></div>
+              <button id="checkins-logout" class="btn-glass-sec" type="button">Lock &amp; sign out</button>
+            </div>
+            <div id="checkins-followup" class="sub-glass checkins-followup hidden" role="status"></div>
+            <div class="checkins-grid">
+              <div class="sub-glass">
+                <h2>How are you today?</h2>
+                <p>Mood: 1 = very low, 5 = very good. Stress: 1 = none, 5 = very high.</p>
+                <form id="checkins-entry-form" class="checkins-form">
+                  <label>Mood <output id="mood-value">3</output><input id="checkin-mood" type="range" min="1" max="5" value="3" /></label>
+                  <label>Perceived stress <output id="stress-value">3</output><input id="checkin-stress" type="range" min="1" max="5" value="3" /></label>
+                  <label>Optional private note<textarea id="checkin-note" rows="2" maxlength="280"></textarea></label>
+                  <button class="btn-glass-pri" type="submit">Save private check-in</button>
+                  <span id="checkins-save-status" role="status"></span>
+                </form>
+              </div>
+              <div class="sub-glass">
+                <h2>Your personal usual range</h2>
+                <div id="checkins-baseline"></div>
+                <button id="checkins-demo" class="btn-glass-sec" type="button">Show synthetic examples</button>
+                <div id="checkins-demo-results" class="checkins-demo-results"></div>
+              </div>
+            </div>
+            <div class="sub-glass checkins-history-card">
+              <div class="panel-head"><h2>Recent private history</h2><button id="checkins-share-open" class="btn-glass-sec" type="button" disabled>Request confidential consult</button></div>
+              <p>Select only the entries you want included in a local consult request. Nothing is shared by default.</p>
+              <div id="checkins-history" class="checkins-history"></div>
+            </div>
+            <div id="checkins-share" class="sub-glass checkins-share hidden">
+              <h2>Review before requesting</h2>
+              <p>Recipient: <strong>Flight surgeon (local demo)</strong>. This request will be stored locally and not delivered.</p>
+              <div id="checkins-share-preview"></div>
+              <label class="checkins-consent"><input id="checkins-consent" type="checkbox" /> I explicitly consent to include only the selected entries in this local request.</label>
+              <button id="checkins-share-submit" class="btn-glass-pri" type="button" disabled>Record local request</button>
+              <button id="checkins-share-cancel" class="btn-glass-sec" type="button">Cancel</button>
+              <p id="checkins-share-status" role="status"></p>
+            </div>
+            <small class="checkins-disclaimer">The three-check-in rule is illustrative and supportive only. It is not a diagnosis or fitness-for-duty decision. Missed check-ins are not treated as reassuring observations.</small>
+          </div>
+        </div>
       </section>
 
       <!-- ==================== LEVEL 2: ASTRONAUT BODY & INTERVENTION POP-UP ==================== -->
@@ -772,28 +839,78 @@
 
         <!-- STARTER GUIDE 3 INTERACTIVE ONBOARD SELF-CHECKS -->
         <div class="starter-checks-grid">
-          <!-- 1. Mission-Aware 3-Min PVT Vigilance Check -->
-          <div class="sub-glass check-card">
+          <!-- Pre-task PVT is mission-aware and lives in its own service module. -->
+          <section id="pvt-panel" class="sub-glass pvt-panel" aria-labelledby="pvt-title">
             <div class="panel-head">
               <div>
-                <span class="zone-kicker">STARTER CHECK 01 · COGNITION</span>
-                <h2 class="panel-title">3-Min PVT Reaction Check</h2>
+                <span class="zone-kicker">PRE-TASK CHECK · MEASURED VISUAL RESPONSE</span>
+                <h2 class="panel-title" id="pvt-title">Three-Minute PVT</h2>
               </div>
-              <span id="pvt-status-pill" class="triage-pill pill-nominal">READY</span>
+              <span id="pvt-status-pill" class="triage-pill pill-warning">CHECKING</span>
             </div>
-            <p class="check-desc">Mission-aware reaction check after short sleep or high CO2. Tap as soon as the optical ring turns emerald.</p>
-            <div class="pvt-stage">
-              <button id="pvt-stim-btn" class="pvt-stim-btn pvt-idle" type="button">
-                <span id="pvt-stim-label">TAP TO START 5-TRIAL CHECK</span>
-                <small id="pvt-stim-sub">Nominal baseline &lt; 280 ms · Auto-logs to crew fatigue</small>
-              </button>
+            <div class="pvt-toolbar">
+              <label>Crew
+                <select id="pvt-crew" class="eng-select" aria-label="Crew member"></select>
+              </label>
+              <label>Isolated demonstration
+                <select id="pvt-scenario" class="eng-select">
+                  <option value="">Live records</option>
+                  <option value="short-sleep">Short sleep</option>
+                  <option value="already-tested">Already tested</option>
+                  <option value="missing-log">Missing sleep log</option>
+                </select>
+              </label>
+              <button id="pvt-refresh" class="eng-btn" type="button">Refresh status</button>
             </div>
-            <div class="check-stats-row">
-              <span>Mean RT: <strong id="pvt-mean-ms">-- ms</strong></span>
-              <span>Trials: <strong id="pvt-trial-count">0 / 5</strong></span>
-              <button id="pvt-reset-btn" class="mini-link-btn" type="button">Reset</button>
+            <div id="pvt-demo-banner" class="pvt-demo-banner hidden" role="note">
+              SYNTHETIC DEMONSTRATION · Isolated from measured logs, recommendations, and personal baselines.
             </div>
-          </div>
+            <p id="pvt-reason" class="check-desc">Loading event, sleep, and PVT status…</p>
+            <div class="pvt-state-grid">
+              <div><span>Assigned event</span><strong id="pvt-event">No current event</strong><small id="pvt-event-time">—</small></div>
+              <div><span>Prior 24h sleep</span><strong id="pvt-sleep">Unknown</strong><small id="pvt-sleep-detail">Complete current log required</small></div>
+              <div><span>Personal baseline</span><strong id="pvt-baseline">Unavailable</strong><small id="pvt-baseline-detail">Same protocol · measured runs only</small></div>
+            </div>
+            <div class="pvt-actions">
+              <button id="pvt-start" class="btn-glass-pri" type="button" disabled>Start three-minute check</button>
+              <span id="pvt-start-note" class="sub-hint">A check is recommended only inside the assigned event window.</span>
+            </div>
+            <div id="pvt-run" class="pvt-run hidden" aria-live="polite">
+              <div class="pvt-run-head"><strong id="pvt-run-clock">03:00</strong><span id="pvt-run-message">Focus on the visual signal and respond as quickly as possible.</span></div>
+              <button id="pvt-stimulus" class="pvt-stimulus" type="button" aria-label="Respond when the visual signal appears">READY</button>
+              <button id="pvt-abort" class="eng-btn" type="button">Cancel check</button>
+            </div>
+            <div id="pvt-result" class="pvt-result hidden" role="status"></div>
+            <details class="pvt-recording">
+              <summary>Update sleep log or assigned event</summary>
+              <form id="pvt-sleep-form" class="pvt-entry-form">
+                <strong>Prior 24h sleep intervals</strong>
+                <p class="sub-hint">Enter every sleep interval and mark the log complete only if the full preceding 24 hours are covered.</p>
+                <div class="pvt-form-row">
+                  <label>Sleep began <input id="pvt-sleep-start" type="datetime-local"></label>
+                  <label>Sleep ended <input id="pvt-sleep-end" type="datetime-local"></label>
+                  <button id="pvt-sleep-add" class="mini-link-btn" type="button">Add interval</button>
+                </div>
+                <ul id="pvt-sleep-draft" class="pvt-sleep-draft" aria-live="polite"></ul>
+                <label class="pvt-check"><input id="pvt-sleep-complete" type="checkbox"> I verified that this complete log covers the preceding 24 hours</label>
+                <button class="eng-btn" type="submit">Save sleep interval</button>
+              </form>
+              <form id="pvt-event-form" class="pvt-entry-form">
+                <strong>Assigned critical event</strong>
+                <div class="pvt-form-row">
+                  <label>Event title <input id="pvt-event-title" class="eng-input" maxlength="160" value="EVA preparation" required></label>
+                  <label>Event time (local) <input id="pvt-event-input" type="datetime-local" required></label>
+                </div>
+                <button class="eng-btn" type="submit">Assign or reschedule event</button>
+              </form>
+            </details>
+            <div class="pvt-records">
+              <h3>Completed PVT records</h3>
+              <p id="pvt-records-empty" class="sub-hint">No measured same-protocol records.</p>
+              <ul id="pvt-records-list"></ul>
+            </div>
+            <p class="pvt-protocol-note">PVT-B protocol v1 · 180 seconds · visual signal · randomized 2–5 s intervals · keyboard or button response · 500 ms illustrative lapse threshold. Browser-reported timing is not authenticated. Local demo guidance only.</p>
+          </section>
 
           <!-- 2. Calibrated Self-Administered Near-Vision (SANS) Exam + Lightweight CPU Voice -->
           <div class="sub-glass check-card sans-vision-card" id="sans-vision-card">
@@ -1022,6 +1139,7 @@
           <div class="mode-switch" role="group" aria-label="Companion Session Mode">
             <button id="comp-mode-hal" class="mode-btn active" type="button">HAL2030 · Scripted</button>
             <button id="comp-mode-family" class="mode-btn" type="button">Family Archive · Simulated</button>
+            <a class="mode-btn" href="/static/family-message.html">Family message demo →</a>
           </div>
         </div>
 
@@ -1089,5 +1207,6 @@
 
   <audio id="voice-audio-player" class="hidden"></audio>
   <script src="/static/app.js"></script>
+  <script src="/static/checkins.js"></script>
 </body>
 </html>

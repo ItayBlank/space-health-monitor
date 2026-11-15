@@ -32,6 +32,7 @@ from astra_core.standards import (
     NASA_RADIATION_STANDARDS,
 )
 from astra_core.vitals import PHYSIONET_RECORDS, analyze_vitals_stream
+from astra_core.checkins import router as private_checkins_router
 from hal2030.paths import resource_root
 
 STATIC_DIR = resource_root() / "static"
@@ -79,6 +80,18 @@ app = FastAPI(
 )
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+app.include_router(private_checkins_router)
+
+
+@app.middleware("http")
+async def private_response_headers(request, call_next):
+    """Prevent browser, proxy, or shared-cache storage of private API responses."""
+    response = await call_next(request)
+    if request.url.path.startswith("/api/private/"):
+        response.headers["Cache-Control"] = "no-store, private"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Vary"] = "Cookie"
+    return response
 
 
 class RadiationSimRequest(BaseModel):
@@ -421,3 +434,7 @@ async def hal_voice_transcribe(file: UploadFile = File(...)) -> dict:
         return transcribe_audio_bytes(data, suffix=suffix)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+# Mission-aware, three-minute pre-task PVT. Kept at the tail to avoid import coupling.
+from astra_core.pvt_api import router as pvt_router
+app.include_router(pvt_router)

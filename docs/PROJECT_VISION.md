@@ -1,31 +1,29 @@
 # Web roadmap and implementation status
 
-Reviewed against main after PRs #9 and #10 on 2026-11-14. The active application
+Reviewed against main after PRs #14, #15, and #18 on 2026-11-15. The active application
 is the FastAPI web console (`server.py`, `astra_core/`, `static/`). The PySide6
 application and its Windows executable remain available as a legacy prototype.
-This inventory is based on code inspection; it is not a new browser acceptance test.
+The feature guides below describe setup and verification scope.
 
 | Feature / issue | Current status | Remaining work |
 | --- | --- | --- |
 | [#4 Guided near-vision](https://github.com/ItayBlank/space-health-monitor/issues/4) | Closed/completed; desktop implementation is merged and a calibrated web flow plus report APIs exist. | Keep browser calibration, microphone and report-parity testing separate from desktop verification. |
 | [#2 Individual radiation exposure](https://github.com/ItayBlank/space-health-monitor/issues/2) | Partial: cabin schedules, module ratios, orbital profile, vessel-average comparison and scenario controls. | Reconcile the model with the original synchronized module-rate baseline; demonstrate two schedules and coverage/estimated labels. |
-| [#3 CO2 and hatch events](https://github.com/ItayBlank/space-health-monitor/issues/3) | Open: cabin readings and ventilation guidance exist. | Two module traces, hatch-event alignment, before/after comparison and simulated-event labels. |
+| [#3 CO2 and hatch events](https://github.com/ItayBlank/space-health-monitor/issues/3) | Partial: one cabin CO2 trace, a simulated hatch spike, and ventilation guidance. | Two module traces, hatch-event alignment, before/after comparison and simulated-event labels. |
 | [#1 Combined vigilance/check-in proposal](https://github.com/ItayBlank/space-health-monitor/issues/1) | Superseded, not completed. | Replaced by the two independently scoped features below. |
-| [#11 Private mood/stress check-ins](https://github.com/ItayBlank/space-health-monitor/issues/11) | Planned. | Timestamped private history, personal baseline establishment, illustrative three-consecutive-check-in follow-up, dismissal and consent-based selected-entry sharing. |
-| [#12 Pre-task three-minute PVT](https://github.com/ItayBlank/space-health-monitor/issues/12) | Planned; current web reaction demo is only five trials and reports a mean. | Sleep logs including naps, assigned critical events, two-hour window, <6 h sleep flag, completed-test suppression, median/lapses and same-protocol baseline. |
+| [#11 Private mood/stress check-ins](https://github.com/ItayBlank/space-health-monitor/issues/11) | Implemented in #14 with sign-in, owner history, an illustrative trend rule, and consent-based local consult requests. | Consult delivery is outside the [local demo](PRIVATE_CHECKINS.md). |
+| [#12 Pre-task three-minute PVT](https://github.com/ItayBlank/space-health-monitor/issues/12) | Implemented in #15 with sleep and event logs, a timed check, and results against a personal baseline when available. | [Timing and thresholds](PVT.md) are illustrative. |
+| [Family messages](FAMILY_MESSAGE_DEMO.md) | Implemented in #18. The simulated link sends audio and motion. The receiver rebuilds full-frame video from a preloaded portrait. | The app plays pre-rendered examples. |
 
-## Next feature boundaries
+## Demo boundaries
 
-Private mood/stress entries belong to the crew member. Keep them out of shared
-readiness cards and routine downlink unless explicitly selected for sharing.
-Crew selection in a shared demo is not authenticated private storage. Define the
-usual-range calculation and baseline establishment before implementing #11.
+The Check-ins feature uses its own local account and keeps entries out of shared
+readiness and routine downlink. Consult requests require explicit consent and
+record only the entries the user selected.
 
-For #12, missing sleep logs must display **Sleep unknown**. The under-six-hour
-and two-hour thresholds are illustrative. The planned result supports crew review;
-it does not grant operational clearance. Do not count the existing five-trial
-demo as a completed three-minute PVT or reuse its fixed cutoff as a personal baseline.
-The issues contain the acceptance criteria and evidence links.
+The pre-task PVT shows **Sleep unknown** for missing, incomplete, or stale logs.
+Its under-six-hour threshold and two-hour window support crew review. Only
+completed three-minute sessions count toward the PVT history and personal baseline.
 
 ## Data and evidence
 

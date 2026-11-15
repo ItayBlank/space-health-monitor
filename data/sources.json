@@ -90,6 +90,100 @@
         "Exact test duration and equivalence to a three-minute PVT-B remain unverified.",
         "Healthy terrestrial research cohort, not astronaut norms or a validated readiness threshold."
       ]
+    },
+    {
+      "id": "astra.family-message.crema-d.v1",
+      "title": "CREMA-D actor 1001 excerpts and LivePortrait benchmark",
+      "kind": "dataset",
+      "status": "shipped",
+      "version": "1658cd342dff90010aa843eaeebd53610a08b1dc",
+      "license": "ODbL-1.0 (dataset); DbCL-1.0 (recordings)",
+      "authors": [
+        "Houwei Cao",
+        "David G. Cooper",
+        "Michael K. Keutmann",
+        "Ruben C. Gur",
+        "Ani Nenkova",
+        "Ragini Verma"
+      ],
+      "source": "https://github.com/CheyneyComputerScience/CREMA-D",
+      "publication_doi": "10.1109/TAFFC.2014.2336244",
+      "source_files": [
+        {
+          "path": "VideoFlash/1001_DFA_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_DFA_NEU_XX.flv",
+          "sha256": "a2b374bcd195d7320437c944eef2208dedd2c22725d09d65e8c31bf6c1eeb286"
+        },
+        {
+          "path": "VideoFlash/1001_IEO_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_IEO_NEU_XX.flv",
+          "sha256": "88205410d8753bded1885603c1e9c660937818d41be69a222a424fc538c0879b"
+        },
+        {
+          "path": "VideoFlash/1001_IOM_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_IOM_NEU_XX.flv",
+          "sha256": "0fc445a34a17a9a3ac103562833d511046aa28762594ef95813b94344e7d3583"
+        },
+        {
+          "path": "VideoFlash/1001_MTI_NEU_XX.flv",
+          "url": "https://github.com/CheyneyComputerScience/CREMA-D/blob/1658cd342dff90010aa843eaeebd53610a08b1dc/VideoFlash/1001_MTI_NEU_XX.flv",
+          "sha256": "52e470b8028a6ac0cbfe6da9ff7690784a116511ffaacc9fb76a7a0bbec43885"
+        }
+      ],
+      "files": [
+        {
+          "path": "static/family-media/one-baseline.mp4",
+          "sha256": "8b4340cfcafceabcca6bb994531f95a977266ae3ab22fa9526c32a59aadbe15a"
+        },
+        {
+          "path": "static/family-media/one-reconstruction.mp4",
+          "sha256": "4eba1049d0e035a8816c1ae90f366b7879087bbdd44f9aa814f946ff367e1721"
+        },
+        {
+          "path": "static/family-media/one-reference.mp4",
+          "sha256": "36d2a6734fb5c4d41dd962925353934a3dc6335f25d157b74fb7512f74fcbcaf"
+        },
+        {
+          "path": "static/family-media/one.zip",
+          "sha256": "1a21a62bfc78a168f8edd78bedb0faf0847f5e41030ba9081f986e1f41029996"
+        },
+        {
+          "path": "static/family-media/portrait.png",
+          "sha256": "c8563239c5625b9a32ed36a95ef51b254bc3f1f7ff43a11ff486a8775b7f2d8a"
+        },
+        {
+          "path": "static/family-media/two-baseline.mp4",
+          "sha256": "809950c9842c7def27945138de0425dcfce1bd577a6658eb497cc6d0c80e3739"
+        },
+        {
+          "path": "static/family-media/two-reconstruction.mp4",
+          "sha256": "3cf1dd938bd98dd18f7a2845b58a85ccf9a564f603c4317ad3c94e599c3b4ad9"
+        },
+        {
+          "path": "static/family-media/two-reference.mp4",
+          "sha256": "c7ef969deeee11bcf3cbe01c0f057e778f5c488110ed5cf45fabecc6d0d38f08"
+        },
+        {
+          "path": "static/family-media/two.zip",
+          "sha256": "43de0f3f91f0b4c23af841c0fdffc21c674da8054628c5ea563b06f780a5bf09"
+        }
+      ],
+      "generation": {
+        "entry_point": "tools/family_liveportrait.py",
+        "method": "docs/FAMILY_MESSAGE_DEMO.md",
+        "liveportrait_revision": "9b294b3d0536135442ea73cb01e6cb3ca7029dd3",
+        "upstream_model": "https://huggingface.co/KlingTeam/LivePortrait"
+      },
+      "transformations": [
+        "Preload the full first frame of take IEO. Crop a separate neutral calibration image from untrimmed take DFA.",
+        "Trim take DFA for the short reference and edit takes MTI, DFA, and IOM in order for the longer reference.",
+        "Extract Opus speech and calibrated relative facial motion. Render offline using the shared portrait.",
+        "Blend the generated face back into the full 480 × 360 preloaded still."
+      ],
+      "limitations": [
+        "Acted research recordings from one actor with a fixed camera and background. The reel joins different takes.",
+        "The app ships previews and payloads. Model weights are installed separately."
+      ]
     }
   ]
 }

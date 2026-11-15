@@ -3,23 +3,21 @@
 ## Current web walkthrough
 
 Launch the web console using [README](../README.md), then open localhost:8000.
-This sequence follows the current navigation; it is a suggested walkthrough,
-not a claim that a new end-to-end browser test was performed.
+Use the synthetic scenarios for a repeatable walkthrough.
 
 1. **Glance / Actions:** select crew and a scenario. Distinguish synthetic scenario
    telemetry from research replay and explain that recommendations are illustrative.
 2. **Heart / RadLab:** show physiological replay and modeled exposure with cabin
    schedules. Describe derived estimates and storm multipliers as model outputs.
-3. **Sensors:** show sensor availability and the calibrated vision flow. The
-   five-trial reaction card is an early demo, not a three-minute PVT or clearance test.
+3. **Sensors.** Show the calibrated vision flow. In the [three-minute PVT](PVT.md),
+   compare **Short sleep**, **Already tested**, and **Missing sleep log**. The
+   recommendation supports crew review.
 4. **Link:** inspect a locally queued report and simulated delivery. There is no
    real ground-control delivery acknowledgement.
-5. **HAL:** demonstrate speech only after loading local models and enabling the
-   microphone. Crew-specific conversations are not evidence of authenticated privacy.
-6. **Roadmap:** explain [#11](https://github.com/ItayBlank/space-health-monitor/issues/11)
-   and [#12](https://github.com/ItayBlank/space-health-monitor/issues/12) as planned.
-   Their acceptance demos must show sustained versus isolated check-ins, and
-   short sleep versus already-tested versus unknown sleep, respectively.
+5. **HAL.** Open Family Archive and play the [family-message demo](FAMILY_MESSAGE_DEMO.md).
+   For live speech, install the local voice models and enable the microphone.
+6. **Check-ins.** Follow the [local setup](PRIVATE_CHECKINS.md), sign in, and use
+   **Show synthetic examples** to compare an isolated dip with sustained change.
 
 ## Legacy desktop three-minute demonstration
 
