@@ -442,7 +442,7 @@ body.glance-active .vision-shell {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease, transform 110ms ease;
 }
@@ -453,9 +453,10 @@ body.glance-active .vision-shell {
 }
 
 .rail-lbl {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  line-height: 1;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
 }
 
 .rail-btn:hover {
@@ -3295,3 +3296,609 @@ th { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); te
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* === Deep-Tech Sleep Radar / CSI, ARED Gym CV & Passive Facial CV === */
+.cv-sleep-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+.cv-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 10px 0;
+  align-items: center;
+}
+.cv-canvas {
+  width: 100%;
+  max-width: 360px;
+  height: 180px;
+  background: rgba(8, 12, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  display: block;
+  margin: 8px 0;
+}
+.cv-metrics-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.85rem;
+  margin-top: 8px;
+  opacity: 0.92;
+}
+.hypnogram-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 54px;
+  padding: 6px 4px;
+  background: rgba(8, 12, 22, 0.55);
+  border-radius: 10px;
+  margin-top: 8px;
+}
+.hypno-bar {
+  flex: 1;
+  min-width: 4px;
+  border-radius: 2px 2px 0 0;
+}
+
+.cv-stage {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  height: 180px;
+  margin: 8px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(8, 12, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.cv-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  display: block;
+}
+.cv-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  border: none;
+  pointer-events: none;
+}
+
+/* ============ VIEW 9: ISS UNIFIED MEDHUB (VISIONOS LIQUID GLASS) ============ */
+#view-medhub {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 24px;
+  min-width: 0;
+}
+
+#view-medhub.hidden {
+  display: none;
+}
+
+#view-medhub .view-mode-bar {
+  margin-bottom: 0;
+}
+
+#view-medhub .simple-kpi-val {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+/* 3-Step Biomarker Fusion Pipeline Strip */
+.medhub-pipeline-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 0;
+  overflow: hidden;
+}
+
+.medhub-pipe-step {
+  padding: 12px 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.medhub-pipe-step:not(:last-child) {
+  border-right: 1px solid var(--hairline);
+}
+
+.medhub-pipe-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--blue-accent);
+}
+
+.medhub-pipe-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.42;
+  color: var(--ink-soft);
+}
+
+.medhub-live-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.medhub-live-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--green-glass);
+  border: 1px solid var(--sub-border);
+  color: var(--green-ink);
+  white-space: nowrap;
+}
+
+/* Mode 1: Compact Pathway Inspector */
+#medhub-pathways-compact {
+  display: grid;
+  gap: 7px;
+}
+
+#medhub-pathways-compact .sbar-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(72px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border-radius: 13px;
+  background: var(--sub-bg);
+  border: 1px solid var(--sub-border);
+  box-shadow: inset 0 1px 0 var(--window-specular);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 140ms ease, background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#medhub-pathways-compact .sbar-row:hover {
+  transform: translateY(-1px);
+  background: var(--sub-bg-hover);
+  border-color: var(--blue-accent);
+}
+
+#medhub-pathways-compact .sbar-row.active,
+#medhub-pathways-compact .sbar-row.selected,
+#medhub-pathways-compact .sbar-row[aria-pressed="true"] {
+  background: var(--sub-bg-hover);
+  border-color: var(--blue-accent);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.16), inset 0 1px 0 var(--window-specular);
+}
+
+#medhub-pathways-compact .sbar-row > :first-child {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+#medhub-pathways-compact .sbar-tag {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+#medhub-causal-box {
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
+#medhub-causal-box strong {
+  color: var(--text-strong);
+}
+
+#medhub-causal-box ul {
+  margin: 6px 0;
+  padding-left: 18px;
+}
+
+#medhub-causal-box p {
+  margin: 4px 0;
+}
+
+/* Mode 2: Depth Lab & Point-of-Care Simulator */
+#medhub-depth-pane {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.medhub-sim-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 0;
+}
+
+.medhub-sim-toolbar .panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+.medhub-overrides-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  align-content: start;
+  align-items: start;
+  grid-auto-rows: max-content;
+  gap: 10px;
+}
+
+.medhub-overrides-grid .eng-field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  font-size: 11.5px;
+  min-width: 0;
+}
+
+.medhub-overrides-grid .eng-input,
+.medhub-overrides-grid .eng-select {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 6 Unified Medical Silos Grid */
+.medhub-silos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.medhub-silo-card {
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.medhub-silo-card:hover {
+  background: var(--sub-bg-hover);
+  transform: translateY(-1px);
+}
+
+.medhub-silo-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.medhub-silo-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.25;
+}
+
+.medhub-devices {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-muted);
+  line-height: 1.35;
+}
+
+.medhub-metrics-kv {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 8px;
+  font-size: 12px;
+}
+
+.medhub-kv-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 9px;
+  border-radius: 10px;
+  background: var(--sub-bg);
+  border: 1px solid var(--hairline);
+}
+
+.medhub-kv-k {
+  color: var(--ink-muted);
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.medhub-kv-v {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text-strong);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+/* Bottom Split: OSDR Table + Pathway Evidence & DONKI SEP Feed */
+#view-medhub .eng-bottom > .sub-glass {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.medhub-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.medhub-table th,
+.medhub-table td {
+  text-align: left;
+  padding: 8px 7px;
+  border-bottom: 1px solid var(--hairline);
+  vertical-align: middle;
+}
+
+.medhub-table th {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  white-space: nowrap;
+}
+
+.medhub-table tbody tr {
+  transition: background 140ms ease;
+}
+
+.medhub-table tbody tr:hover {
+  background: var(--sub-bg-hover);
+}
+
+.medhub-pathways-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.medhub-pathway-card {
+  padding: 13px 14px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  transition: background 150ms ease;
+}
+
+.medhub-pathway-card:hover {
+  background: var(--sub-bg-hover);
+}
+
+.medhub-pathway-card .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 2px;
+}
+
+.medhub-pathway-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.medhub-pathway-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.25;
+}
+
+.medhub-pathway-score {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+.medhub-signals-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+.medhub-science-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+}
+
+.medhub-action-box {
+  padding: 8px 11px;
+  border-radius: 11px;
+  background: var(--sub-bg);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--blue-accent);
+  font-size: 12px;
+  line-height: 1.42;
+  color: var(--ink);
+}
+
+.medhub-donki-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+
+.medhub-donki-item {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--sub-bg);
+  border: 1px solid var(--sub-border);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+  transition: background 140ms ease;
+}
+
+.medhub-donki-item:hover {
+  background: var(--sub-bg-hover);
+}
+
+.medhub-donki-item strong {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-strong);
+}
+
+/* VisionOS Status & Tier Pill Fallback Mapping */
+.medhub-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  text-transform: uppercase;
+}
+
+.tier-LOW,
+.status-NOMINAL {
+  background: var(--green-glass);
+  color: var(--green-ink);
+}
+
+.tier-WATCH,
+.tier-ELEVATED,
+.status-WATCH,
+.status-ELEVATED {
+  background: var(--orange-glass);
+  color: var(--orange-ink);
+}
+
+.tier-CRITICAL,
+.status-CRITICAL {
+  background: var(--red-glass);
+  color: var(--red-ink);
+}
+
+/* MedHub Responsive Breakpoints */
+@media (max-width: 1120px) {
+  .medhub-silos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 880px) {
+  .medhub-pipeline-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .medhub-pipe-step:not(:last-child) {
+    border-right: none;
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  .medhub-silos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #view-medhub .eng-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .medhub-overrides-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .medhub-sim-toolbar .panel-head {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .medhub-overrides-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .medhub-metrics-kv {
+    grid-template-columns: 1fr;
+  }
+
+  #medhub-pathways-compact .sbar-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  #medhub-pathways-compact .sbar-track {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+
+  .medhub-pathway-head {
+    flex-wrap: wrap;
+  }
+
+  .medhub-sim-toolbar .btn-glass-pri {
+    width: 100%;
+  }
+}
+
+

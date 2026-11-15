@@ -19,6 +19,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from astra_core.clinical_hub import evaluate_clinical_hub
 from astra_core.radiation import (
     DEFAULT_HOURLY_SCHEDULE,
     ISS_CABINS,
@@ -38,6 +39,52 @@ from hal2030.paths import resource_root
 STATIC_DIR = resource_root() / "static"
 
 _VITALS_CACHE: Dict[Tuple[str, str, float, float, Optional[float]], dict] = {}
+
+_READINESS_LOCK = threading.Lock()
+_READINESS_STATE: Dict[str, Any] = {
+    "radiation": None,
+    "vitals": None,
+    "sleep": None,
+    "exercise": None,
+    "sleep_raw": None,
+    "exercise_raw": None,
+}
+
+
+def _compute_unified_readiness(
+    radiation_result: Optional[Dict[str, Any]] = None,
+    vitals_result: Optional[Dict[str, Any]] = None,
+    sleep_patch: Optional[Dict[str, Any]] = None,
+    exercise_patch: Optional[Dict[str, Any]] = None,
+    pillar_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
+) -> Dict[str, Any]:
+    """Merge all active live pillars into a unified Astronaut Readiness Score."""
+    with _READINESS_LOCK:
+        if radiation_result is not None:
+            _READINESS_STATE["radiation"] = radiation_result
+        if vitals_result is not None:
+            _READINESS_STATE["vitals"] = vitals_result
+        if sleep_patch is not None:
+            _READINESS_STATE["sleep"] = sleep_patch
+        if exercise_patch is not None:
+            _READINESS_STATE["exercise"] = exercise_patch
+
+        rad = _READINESS_STATE["radiation"] or simulate_astronaut_radiation()
+        vit = _READINESS_STATE["vitals"] or _get_cached_vitals("ptt_s3_sit")
+
+        merged_overrides: Dict[str, Dict[str, Any]] = {}
+        if _READINESS_STATE["sleep"] is not None:
+            merged_overrides["sleep_vigilance"] = _READINESS_STATE["sleep"]
+        if _READINESS_STATE["exercise"] is not None:
+            merged_overrides["exercise_nutrition"] = _READINESS_STATE["exercise"]
+        if pillar_overrides:
+            merged_overrides.update(pillar_overrides)
+
+        return compute_holistic_readiness(
+            rad,
+            pillar_overrides=merged_overrides or None,
+            vitals_result=vit,
+        )
 
 
 def _get_cached_vitals(
@@ -170,7 +217,7 @@ def get_radiation_baseline() -> dict:
     """Return default 24h schedule simulation + 23-day REM cabin data + live baseline vitals."""
     sim = simulate_astronaut_radiation()
     vitals = _get_cached_vitals("ptt_s3_sit")
-    readiness = compute_holistic_readiness(sim, vitals_result=vitals)
+    readiness = _compute_unified_readiness(radiation_result=sim, vitals_result=vitals)
     return {"radiation": sim, "vitals": vitals, "readiness": readiness, "rem_summary": load_rem_summary()}
 
 
@@ -185,7 +232,7 @@ def run_radiation_simulation(req: RadiationSimRequest) -> dict:
         solar_storm_active=req.solar_storm_active,
         personal_dosimeter_online=req.personal_dosimeter_online,
     )
-    readiness = compute_holistic_readiness(sim, pillar_overrides=req.pillar_overrides)
+    readiness = _compute_unified_readiness(radiation_result=sim, pillar_overrides=req.pillar_overrides)
     return {"radiation": sim, "readiness": readiness}
 
 
@@ -202,8 +249,7 @@ def list_vitals_records() -> dict:
 def get_vitals_baseline(record_id: str = "ptt_s3_sit", atmosphere_profile: str = "iss_nominal") -> dict:
     """Analyze baseline PhysioNet stream and return updated holistic Readiness Score."""
     vitals = _get_cached_vitals(record_id=record_id, atmosphere_profile=atmosphere_profile)
-    sim = simulate_astronaut_radiation()
-    readiness = compute_holistic_readiness(sim, vitals_result=vitals)
+    readiness = _compute_unified_readiness(vitals_result=vitals)
     return {"vitals": vitals, "readiness": readiness}
 
 
@@ -217,8 +263,7 @@ def run_vitals_analysis(req: VitalsAnalyzeRequest) -> dict:
         step_sec=req.step_sec,
         cabin_ppco2_mmhg=req.cabin_ppco2_mmhg,
     )
-    sim = simulate_astronaut_radiation()
-    readiness = compute_holistic_readiness(sim, vitals_result=vitals)
+    readiness = _compute_unified_readiness(vitals_result=vitals)
     return {"vitals": vitals, "readiness": readiness}
 
 
@@ -434,6 +479,222 @@ async def hal_voice_transcribe(file: UploadFile = File(...)) -> dict:
         return transcribe_audio_bytes(data, suffix=suffix)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ==================== DEEP-TECH SLEEP (RADAR / CSI) & ARED CV ====================
+
+
+class SleepAnalyzeRequest(BaseModel):
+    """Input payload for contactless radar sleep & cardiorespiratory ML analysis."""
+
+    record_id: str = Field(default="nominal_rest")
+    cabin_ppco2_mmhg: Optional[float] = Field(default=None, ge=0.0, le=20.0)
+    iq_data: Optional[List[List[float]]] = Field(default=None)
+    fs_hz: float = Field(default=50.0, gt=1.0, le=500.0)
+
+
+class CsiSleepRequest(BaseModel):
+    """Input payload for ESP32 Wi-Fi CSI 52-subcarrier sleep/respiration analysis."""
+
+    csi_frames: List[List[float]] = Field(min_length=10)
+    fs_hz: float = Field(default=20.0, gt=1.0, le=200.0)
+    cabin_ppco2_mmhg: Optional[float] = Field(default=None, ge=0.0, le=20.0)
+
+
+class ExerciseRepInput(BaseModel):
+    """Single repetition biomechanics & velocity-loss summary from ARED CV."""
+
+    rep: int = Field(ge=1)
+    rom_deg: float = Field(ge=0.0, le=180.0)
+    concentric_vel_norm: float = Field(ge=0.0)
+    velocity_loss_pct: float = Field(ge=0.0, le=100.0)
+    valgus_deg: float = Field(default=0.0, ge=0.0, le=90.0)
+    trunk_lean_deg: float = Field(default=0.0, ge=0.0, le=90.0)
+    symmetry_pct: float = Field(default=0.0, ge=0.0, le=100.0)
+    quality_score: float = Field(ge=0.0, le=100.0)
+    flags: List[str] = Field(default_factory=list)
+
+
+class ExerciseSetRequest(BaseModel):
+    """Completed ARED resistance set summary from browser PoseLandmarker CV."""
+
+    exercise: str = Field(default="squat")
+    camera_mode: str = Field(default="frontal", pattern="^(frontal|side)$")
+    reps: List[ExerciseRepInput] = Field(min_length=1)
+    notes: Optional[str] = None
+
+
+@app.post("/api/sleep/analyze")
+def analyze_sleep_endpoint(req: SleepAnalyzeRequest) -> dict:
+    """Run contactless radar sleep staging & cardiorespiratory analysis and update readiness."""
+    try:
+        from astra_core import radar_sleep as rs
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="astra_core.radar_sleep module not available") from exc
+
+    fn = (
+        getattr(rs, "analyze_sleep_record", None)
+        or getattr(rs, "analyze_radar_sleep", None)
+        or getattr(rs, "analyze_sleep_stream", None)
+    )
+    if fn is None:
+        raise HTTPException(status_code=503, detail="radar_sleep analyzer entrypoint missing")
+
+    import inspect
+
+    raw_kwargs = {
+        "record_id": req.record_id,
+        "cabin_ppco2_mmhg": req.cabin_ppco2_mmhg,
+        "iq_data": req.iq_data,
+        "fs_hz": req.fs_hz,
+    }
+    sig = inspect.signature(fn)
+    if any(p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()):
+        call_kwargs = raw_kwargs
+    else:
+        call_kwargs = {k: v for k, v in raw_kwargs.items() if k in sig.parameters}
+    sleep_res = fn(**call_kwargs)
+    patch = sleep_res.get("readiness_patch")
+    with _READINESS_LOCK:
+        _READINESS_STATE["sleep_raw"] = sleep_res
+    readiness = _compute_unified_readiness(sleep_patch=patch)
+    return {"sleep": sleep_res, "readiness": readiness}
+
+
+@app.post("/api/sleep/csi")
+def analyze_sleep_csi_endpoint(req: CsiSleepRequest) -> dict:
+    """Analyze ESP32 Wi-Fi CSI subcarrier frames for respiration, apnea, and motion."""
+    try:
+        from astra_core import radar_sleep as rs
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="astra_core.radar_sleep module not available") from exc
+
+    fn = getattr(rs, "analyze_csi_window", None)
+    if fn is None:
+        raise HTTPException(status_code=503, detail="analyze_csi_window entrypoint missing")
+
+    import inspect
+
+    sig = inspect.signature(fn)
+    frames_arg = [{"amplitudes": row} for row in req.csi_frames]
+    if "frames" in sig.parameters:
+        call_kwargs: Dict[str, Any] = {"frames": frames_arg, "fs_hz": req.fs_hz}
+    else:
+        call_kwargs = {"csi_frames": req.csi_frames, "fs_hz": req.fs_hz}
+    if "cabin_ppco2_mmhg" in sig.parameters or any(
+        p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+    ):
+        call_kwargs["cabin_ppco2_mmhg"] = req.cabin_ppco2_mmhg
+    csi_res = fn(**call_kwargs)
+    patch = csi_res.get("readiness_patch")
+    with _READINESS_LOCK:
+        _READINESS_STATE["sleep_raw"] = csi_res
+    readiness = _compute_unified_readiness(sleep_patch=patch)
+    return {"csi": csi_res, "readiness": readiness}
+
+
+@app.post("/api/exercise/set")
+def submit_exercise_set(req: ExerciseSetRequest) -> dict:
+    """Score ARED CV set velocity loss & rep quality and update exercise_nutrition readiness."""
+    rep_count = len(req.reps)
+    mean_quality = sum(r.quality_score for r in req.reps) / rep_count
+    max_vel_loss = max(r.velocity_loss_pct for r in req.reps)
+    valgus_flags = sum(1 for r in req.reps if r.valgus_deg > 10.0 or "valgus" in r.flags)
+    lumbar_flags = sum(1 for r in req.reps if r.trunk_lean_deg > 15.0 or "lumbar" in r.flags)
+
+    # Fatigue & form penalty: >35% concentric velocity loss signals neuromuscular termination threshold
+    vel_penalty = max(0.0, (max_vel_loss - 15.0) * 0.8)
+    form_penalty = (valgus_flags + lumbar_flags) * 3.0
+    score = round(max(10.0, min(100.0, mean_quality - vel_penalty * 0.4 - form_penalty)))
+
+    if max_vel_loss > 35.0 or score < 60:
+        status = "CRITICAL" if score < 45 else "WARNING"
+        crew_summary = f"ARED {req.exercise}: {rep_count} reps · {max_vel_loss:.0f}% velocity loss (fatigue cutoff)."
+        crew_action = "End set now and rest 3 min to protect lumbar & knee joints."
+        action = f"High neuromuscular fatigue ({max_vel_loss:.1f}% velocity loss); terminate set & log hydration."
+    elif max_vel_loss >= 20.0:
+        status = "WATCH"
+        crew_summary = f"ARED {req.exercise}: {rep_count} reps · {max_vel_loss:.0f}% velocity loss (moderate fatigue)."
+        crew_action = "Good training stimulus — stop before 35% velocity loss."
+        action = f"Moderate fatigue ({max_vel_loss:.1f}% velocity loss), quality {mean_quality:.0f}/100."
+    else:
+        status = "NOMINAL"
+        crew_summary = f"ARED {req.exercise}: {rep_count} reps · Quality {mean_quality:.0f}/100."
+        crew_action = "Form and bar speed are nominal."
+        action = f"ARED {req.exercise} nominal ({rep_count} reps, {mean_quality:.0f}/100 quality)."
+
+    exercise_patch = {
+        "label": "Strength & Nutrition",
+        "score": score,
+        "status": status,
+        "source": f"ARED Pose Tracker CV ({req.camera_mode})",
+        "summary": f"{req.exercise.title()} {rep_count} reps · Quality {mean_quality:.0f}/100 · Max VL {max_vel_loss:.1f}%",
+        "crew_summary": crew_summary,
+        "crew_action": crew_action,
+        "action": action,
+        "is_live_module": True,
+    }
+    exercise_summary = {
+        "exercise": req.exercise,
+        "camera_mode": req.camera_mode,
+        "rep_count": rep_count,
+        "mean_quality_score": round(mean_quality, 1),
+        "max_velocity_loss_pct": round(max_vel_loss, 1),
+        "valgus_flags": valgus_flags,
+        "lumbar_flags": lumbar_flags,
+        "score": score,
+        "status": status,
+    }
+    with _READINESS_LOCK:
+        _READINESS_STATE["exercise_raw"] = exercise_summary
+    readiness = _compute_unified_readiness(exercise_patch=exercise_patch)
+    return {
+        "exercise": exercise_summary,
+        "readiness": readiness,
+    }
+
+
+class ClinicalEvaluateRequest(BaseModel):
+    """Unified 6-silo ISS Medical & Coupled-Risk pre-symptomatic evaluation request."""
+
+    scenario_id: str = Field(default="nominal_iss")
+    overrides: Optional[Dict[str, Any]] = Field(default=None)
+
+
+@app.get("/api/clinical/hub")
+def get_clinical_hub(scenario_id: str = "nominal_iss") -> dict:
+    """Return the unified 6-silo ISS medical view, NASA OSDR benchmarks, and coupled-risk pathways."""
+    with _READINESS_LOCK:
+        rad = _READINESS_STATE["radiation"] or simulate_astronaut_radiation()
+        vit = _READINESS_STATE["vitals"] or _get_cached_vitals("ptt_s3_sit")
+        slp = _READINESS_STATE["sleep_raw"]
+        exc = _READINESS_STATE["exercise_raw"]
+    return evaluate_clinical_hub(
+        scenario_id=scenario_id,
+        live_radiation=rad,
+        live_vitals=vit,
+        live_sleep=slp,
+        live_exercise=exc,
+    )
+
+
+@app.post("/api/clinical/evaluate")
+def evaluate_clinical_hub_endpoint(req: ClinicalEvaluateRequest) -> dict:
+    """Evaluate custom/live POC labs, ultrasound/OCT, exercise, and cabin overrides across all 6 silos."""
+    with _READINESS_LOCK:
+        rad = _READINESS_STATE["radiation"] or simulate_astronaut_radiation()
+        vit = _READINESS_STATE["vitals"] or _get_cached_vitals("ptt_s3_sit")
+        slp = _READINESS_STATE["sleep_raw"]
+        exc = _READINESS_STATE["exercise_raw"]
+    return evaluate_clinical_hub(
+        scenario_id=req.scenario_id,
+        overrides=req.overrides,
+        live_radiation=rad,
+        live_vitals=vit,
+        live_sleep=slp,
+        live_exercise=exc,
+    )
+
 
 # Mission-aware, three-minute pre-task PVT. Kept at the tail to avoid import coupling.
 from astra_core.pvt_api import router as pvt_router

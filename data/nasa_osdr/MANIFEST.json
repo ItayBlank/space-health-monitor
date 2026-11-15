@@ -1,0 +1,32 @@
+[
+  {
+    "file": "OSD-569_CBC_TRANSFORMED.csv",
+    "bytes": 9317,
+    "sha256": "32e4f9c97d3b636b5d5c2e72dab8c4d3319dee64c437508b092dad04603b2b8f",
+    "source_url": "https://osdr.nasa.gov/geode-py/ws/studies/OSD-569/download?source=datamanager&file=LSDS-7_Complete_Blood_Count_CBC_TRANSFORMED.csv"
+  },
+  {
+    "file": "OSD-575_CMP_TRANSFORMED.csv",
+    "bytes": 8506,
+    "sha256": "5eb1e7f025dd8443a9e70111e62bc32afae3432753024489c5c013e401d709d9",
+    "source_url": "https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Comprehensive_Metabolic_Panel_CMP_TRANSFORMED.csv"
+  },
+  {
+    "file": "OSD-575_Cardio_EvePanel_TRANSFORMED.csv",
+    "bytes": 6207,
+    "sha256": "fdba6c3ce45401c12ca9b699fa375303793959aa0391e2f3c722f354d9cfc75c",
+    "source_url": "https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_cardiovascular_EvePanel_TRANSFORMED.csv"
+  },
+  {
+    "file": "OSD-575_Immune_EvePanel_TRANSFORMED.csv",
+    "bytes": 41214,
+    "sha256": "efa8fb807e3b7e363df47f64f48d03c57d2397daf8fd22afc0ea4335d5d3d53e",
+    "source_url": "https://osdr.nasa.gov/geode-py/ws/studies/OSD-575/download?source=datamanager&file=LSDS-8_Multiplex_serum_immune_EvePanel_TRANSFORMED.csv"
+  },
+  {
+    "file": "DONKI_SEP_2024_05.json",
+    "bytes": 9415,
+    "sha256": "30c225b9a0fabee1ece4e0b56d0ccdbfe54f0b85e2a58815a885517db1fe4cfe",
+    "source_url": "https://ccmc.gsfc.nasa.gov/DONKI-API/get/SEP?startDate=2024-05-01&endDate=2024-06-01"
+  }
+]
