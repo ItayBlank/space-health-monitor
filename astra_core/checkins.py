@@ -120,7 +120,8 @@ SESSION_SECRET = os.environ.get("ASTRA_SESSION_SECRET", "astra-core-hal2030-demo
 
 
 def _sign_token(crew_id: str, expires: int) -> str:
-    payload = f"{crew_id}|{expires}".encode("utf-8")
+    nonce = secrets.token_hex(8)
+    payload = f"{crew_id}|{expires}|{nonce}".encode("utf-8")
     p_b64 = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
     sig = hmac.new(SESSION_SECRET, p_b64.encode("ascii"), hashlib.sha256).digest()
     s_b64 = base64.urlsafe_b64encode(sig).decode("ascii").rstrip("=")
@@ -137,7 +138,7 @@ def _verify_stateless_token(token: str) -> str | None:
         if not hmac.compare_digest(expected, sig):
             return None
         raw = base64.urlsafe_b64decode(p_b64 + "=" * (-len(p_b64) % 4)).decode("utf-8")
-        crew_id, exp_str = raw.rsplit("|", 1)
+        crew_id, exp_str, _nonce = raw.rsplit("|", 2)
         if int(exp_str) <= int(time.time()):
             return None
         return crew_id
@@ -170,7 +171,6 @@ def _owner(token: str | None) -> str:
         row = db.execute("SELECT crew_id,expires_at FROM sessions WHERE token_hash=?", (digest,)).fetchone()
         if row is not None:
             if row["expires_at"] <= now:
-                db.execute("DELETE FROM sessions WHERE token_hash=?", (digest,))
                 raise HTTPException(401, "Sign in to your private check-ins")
             return str(row["crew_id"])
     # Stateless fallback for multi-instance / serverless deployments (e.g. Vercel)
@@ -266,7 +266,7 @@ def logout(request: Request, response: Response, token: Annotated[str | None, Co
     _csrf(request)
     if token:
         with _db() as db:
-            db.execute("DELETE FROM sessions WHERE token_hash=?", (hashlib.sha256(token.encode()).digest(),))
+            db.execute("UPDATE sessions SET expires_at=0 WHERE token_hash=?", (hashlib.sha256(token.encode()).digest(),))
     response.delete_cookie(COOKIE_NAME, path="/api/private", httponly=True, samesite="lax")
     return {"authenticated": False}
 
