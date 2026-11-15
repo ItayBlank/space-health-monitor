@@ -4143,6 +4143,7 @@ async function speakTextNatural(text, opts = {}) {
       updateVoiceIndicators("speaking", isAlert ? clean : "Speaking (Browser Fallback)…");
       window.speechSynthesis.cancel();
       const utt = new SpeechSynthesisUtterance(clean);
+      utt.lang = "en-US";
       utt.rate = 0.94;
       utt.onend = () => finish();
       utt.onerror = () => finish();
