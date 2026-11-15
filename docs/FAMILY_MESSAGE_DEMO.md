@@ -38,7 +38,7 @@ $python = '.\runtime\family-message\.venv\Scripts\python.exe'
 $model = 'runtime/family-message/LivePortrait'
 $demo = 'static/family-media'
 foreach ($name in 'one','two') {
-  & $python tools/family_liveportrait.py --liveportrait $model render "$demo/$name.zip" "$demo/portrait.png" "runtime/family-message/$name-rendered.mp4"
+  & $python tools/family_liveportrait.py --liveportrait $model render "$demo/$name.zip" "$demo/portrait.png" "runtime/family-message/$name-rendered.mp4" --paste-back 242:242:86:16
   if ($LASTEXITCODE -ne 0) { throw "Rendering failed for $name" }
 }
 ```
@@ -69,14 +69,14 @@ For new footage, choose a tightly framed, front-facing subject with a relaxed, e
 | Single take | 1.3 s | 20 fps | 102,603 B | 14,089 B | 11,821 B | 16.1% |
 | Edited reel | 4.4 s | 15 fps | 309,577 B | 48,437 B | 32,950 B | 32.0% |
 
-These are complete file sizes. Within each row the 256 × 256 H.264 baseline uses the same crop, frame rate, and Opus packets as the corresponding ZIP. H.264 targets and is capped at 64 kbps. The 512 × 512 reconstruction uses LivePortrait’s native output and muxes AAC encoded from the received speech.
+These are complete file sizes. Within each row the 256 × 256 H.264 baseline uses the same crop, frame rate, and Opus packets as the corresponding ZIP. H.264 targets and is capped at 64 kbps. The receiver crops the face from the shared still, renders it at LivePortrait’s native resolution, and blends it back into the 480 × 360 still with a feathered edge. The body and background come from the still. The renderer muxes AAC encoded from the received speech.
 
-The shared portrait is 68,776 B and the five checkpoints total 522,320,239 B. These are one-time inputs and excluded from the per-message reduction. The portrait costs more than the combined savings on these two messages. The clips contain acted speech with a fixed camera and background. Visual fidelity differs, and CPU rendering happens before playback. The 4.4-second reel took 579 seconds to render and encode on the test Intel Core i5-1135G7 with four PyTorch threads, after model load.
+The shared portrait is 112,941 B and the five checkpoints total 522,320,239 B. These are one-time inputs and excluded from the per-message reduction. The portrait costs more than the combined savings on these two messages. The clips contain acted speech with a fixed camera and background. Visual fidelity differs, and CPU rendering happens before playback. The 4.4-second reel took 579 seconds to render and encode on the test Intel Core i5-1135G7 with four PyTorch threads, after model load.
 
 ## Asset provenance
 
 Contains recordings from [CREMA-D by Cao et al.](https://github.com/CheyneyComputerScience/CREMA-D) at Git revision `1658cd342dff90010aa843eaeebd53610a08b1dc`. The authors release the database under [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) and individual recordings under [DbCL 1.0](https://opendatacommons.org/licenses/dbcl/1-0/). Both examples preserve the actor’s original spoken audio. See [the source registry](../data/sources.json) for input and output hashes.
 
-- The shared portrait is the first frame of `1001_IEO_NEU_XX.flv`, cropped with `crop=242:242:86:16,scale=256:256`. The sender calibrates from the same crop of the first frame of `1001_DFA_NEU_XX.flv`.
+- The shared portrait is the full first frame of `1001_IEO_NEU_XX.flv`. The receiver derives the existing face crop with `crop=242:242:86:16,scale=256:256`. The sender calibrates from the same crop of the first frame of `1001_DFA_NEU_XX.flv`.
 - The single take trims `1001_DFA_NEU_XX.flv` to 0.24–1.54 seconds and encodes it as H.264/AAC before motion extraction.
 - The reel joins `1001_MTI_NEU_XX.flv` (0.20–1.90 s), `1001_DFA_NEU_XX.flv` (0.24–1.54 s), and `1001_IOM_NEU_XX.flv` (0.49–1.79 s) with straight cuts and no changes to the spoken words. The edited reference is H.264/AAC at 20 fps and its payload and baseline use 15 fps.

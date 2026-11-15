@@ -12,14 +12,14 @@
     <h1>Family message</h1>
     <p>A simulated Earth–Mars link using acted speech from the CREMA-D research dataset. Compare each recording with its calibrated LivePortrait reconstruction and a low-bitrate video encode.</p>
     <section class="preload">
-      <img src="/static/family-media/portrait.png" width="256" height="256" alt="Shared portrait of CREMA-D actor 1001">
+      <img src="/static/family-media/portrait.png" width="480" height="360" alt="Shared portrait of CREMA-D actor 1001">
       <div>
         <h2>One portrait, loaded once</h2>
-        <p>The receiver uses the same <a href="/static/family-media/portrait.png" download>68,776-byte portrait</a> for both messages. It also needs the LivePortrait model weights installed once (522 MB).</p>
+        <p>The receiver uses the same <a href="/static/family-media/portrait.png" download>112,941-byte portrait</a> for both messages. It also needs the LivePortrait model weights installed once (522 MB).</p>
       </div>
     </section>
     <h2 class="link-heading">Simulated Earth–Mars link</h2>
-    <p>Each transmission carries a ZIP with audio and facial motion. The Mars videos show offline renders from those ZIPs. The H.264 comparison targets 64 kbps and uses the same crop, frame rate, and compressed speech as its ZIP.</p>
+    <p>Each transmission carries a ZIP with audio and facial motion. The receiver blends the animated face into the shared still. The Mars videos show the resulting full frame. The H.264 comparison targets 64 kbps and uses the same crop, frame rate, and compressed speech as its ZIP.</p>
 
     <section class="message" aria-labelledby="jacket">
       <h2 id="jacket">Single take · 1.3 seconds</h2>
@@ -36,7 +36,7 @@
           <p><strong>14,089 bytes</strong></p>
         </figure>
         <figure>
-          <figcaption>Mars · Original audio · Calibrated reconstruction</figcaption>
+          <figcaption>Mars · Original audio · Full-frame reconstruction</figcaption>
           <video src="/static/family-media/one-reconstruction.mp4" controls playsinline preload="none" aria-label="Single-take calibrated reconstruction"></video>
           <p><a href="/static/family-media/one.zip" download>Download message ZIP</a> · <strong>11,821 bytes</strong> · 16.1% smaller than low-bitrate video</p>
         </figure>
@@ -58,7 +58,7 @@
           <p><strong>48,437 bytes</strong></p>
         </figure>
         <figure>
-          <figcaption>Mars · Original audio · Calibrated reconstruction</figcaption>
+          <figcaption>Mars · Original audio · Full-frame reconstruction</figcaption>
           <video src="/static/family-media/two-reconstruction.mp4" controls playsinline preload="none" aria-label="Three-take calibrated reconstruction"></video>
           <p><a href="/static/family-media/two.zip" download>Download message ZIP</a> · <strong>32,950 bytes</strong> · 32.0% smaller than low-bitrate video</p>
         </figure>

@@ -20,5 +20,5 @@ section { background: #fff; padding: 20px; border: 1px solid #c9dce8; border-rad
 .panels { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px; }
 figure { display: grid; grid-template-rows: auto auto 1fr; gap: 8px; margin: 0; }
 figcaption { font-size: .92rem; font-weight: 650; }
-video { display: block; width: 100%; aspect-ratio: 1; background: #233548; border-radius: 10px; }
+video { display: block; width: 100%; aspect-ratio: 4 / 3; background: #233548; border-radius: 10px; }
 @media (max-width: 720px) { .panels { grid-template-columns: 1fr; } }

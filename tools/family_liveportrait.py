@@ -117,13 +117,50 @@ def read_message(path, np):
         return fps, track, archive.read("audio.ogg")
 
 
+def make_paste_back(portrait, box, cv2, np):
+    """Blend each generated RGB crop into a fixed RGB portrait."""
+    width, height, x, y = box
+    frame_height, frame_width = portrait.shape[:2]
+    if (width != height or width < 16 or x + width > frame_width or y + height > frame_height
+            or frame_width % 2 or frame_height % 2):
+        raise ValueError("Use a square paste box inside an even-sized portrait")
+    feather = min(12, width // 4)
+    distances = np.minimum(np.arange(width), np.arange(width)[::-1])
+    edge = np.minimum(distances / feather, 1.0).astype(np.float32)
+    alpha = (edge[:, None] * edge[None, :])[:, :, None]
+    region = np.s_[y:y + height, x:x + width]
+    background = portrait[region] * (1 - alpha)
+
+    def paste(frame):
+        patch = cv2.resize(frame, (width, height), interpolation=cv2.INTER_AREA)
+        output = portrait.copy()
+        output[region] = np.rint(patch * alpha + background).astype(np.uint8)
+        return output
+
+    return paste
+
+
 def render(args, runtime):
     cv2, np, torch, model, rotation = runtime
     fps, track, audio = read_message(args.message, np)
     image = cv2.imread(str(args.portrait))
-    if image is None or image.shape[:2] != (256, 256):
-        raise ValueError("The preloaded portrait must be a 256 × 256 image")
-    source = model.prepare_source(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+    if image is None:
+        raise ValueError("The preloaded portrait must be a readable image")
+    portrait = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    frame_size = "512x512"
+    paste_back = None
+    if args.paste_back:
+        box = tuple(map(int, args.paste_back.split(":")))
+        paste_back = make_paste_back(portrait, box, cv2, np)
+        frame_size = f"{image.shape[1]}x{image.shape[0]}"
+        crop = ffmpeg(args.ffmpeg, *local_input(args.portrait), "-vf",
+                      f"crop={args.paste_back},scale=256:256", "-frames:v", 1,
+                      "-pix_fmt", "rgb24", "-threads", 1, "-f", "rawvideo", "-",
+                      capture_output=True).stdout
+        portrait = np.frombuffer(crop, dtype=np.uint8).reshape(256, 256, 3)
+    elif portrait.shape[:2] != (256, 256):
+        raise ValueError("The preloaded portrait must be 256 × 256 or use --paste-back")
+    source = model.prepare_source(portrait)
     pose = model.get_kp_info(source)
     matrix = rotation(pose["pitch"], pose["yaw"], pose["roll"])
     keypoints = model.transform_keypoint(pose)
@@ -133,7 +170,7 @@ def render(args, runtime):
         voice = Path(scratch) / "audio.ogg"
         voice.write_bytes(audio)
         command = [args.ffmpeg, "-v", "error", "-y", "-f", "rawvideo", "-pixel_format", "rgb24",
-                   "-video_size", "512x512", "-framerate", str(fps), *local_input("pipe:0"), *local_input(voice),
+                   "-video_size", frame_size, "-framerate", str(fps), *local_input("pipe:0"), *local_input(voice),
                    "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-pix_fmt", "yuv420p",
                    "-c:a", "aac", "-movflags", "+faststart", str(args.output)]
         with subprocess.Popen(command, stdin=subprocess.PIPE) as encoder:
@@ -146,7 +183,10 @@ def render(args, runtime):
                 target = scale[..., None] * (pose["kp"] @ angles + expression) + shift[:, None, :]
                 target = model.stitching(keypoints, target)
                 result = model.warp_decode(appearance, keypoints, target)["out"]
-                encoder.stdin.write(model.parse_output(result)[0].tobytes())
+                frame = model.parse_output(result)[0]
+                if paste_back:
+                    frame = paste_back(frame)
+                encoder.stdin.write(frame.tobytes())
                 if index % 5 == 0:
                     print(f"Rendered {index}/{len(track)} frames", flush=True)
             encoder.stdin.close()
@@ -174,11 +214,14 @@ def main():
     receiver.add_argument("message", type=Path)
     receiver.add_argument("portrait", type=Path)
     receiver.add_argument("output", type=Path)
+    receiver.add_argument("--paste-back", help="Square crop position in the full portrait as width:height:x:y")
     args = parser.parse_args()
     if not args.ffmpeg:
         parser.error("Set --ffmpeg or add ffmpeg to PATH")
     if getattr(args, "crop", None) and not re.fullmatch(r"\d+:\d+:\d+:\d+", args.crop):
         parser.error("--crop requires width:height:x:y in pixels")
+    if getattr(args, "paste_back", None) and not re.fullmatch(r"\d+:\d+:\d+:\d+", args.paste_back):
+        parser.error("--paste-back requires width:height:x:y in pixels")
     inputs = ("clip",) if args.command == "pack" else ("message", "portrait")
     if getattr(args, "calibration_image", None):
         inputs += ("calibration_image",)

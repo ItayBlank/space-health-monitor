@@ -137,7 +137,7 @@
         },
         {
           "path": "static/family-media/one-reconstruction.mp4",
-          "sha256": "197540bb7393cd3bd732f176437ebb75f1cbdb5c031882c4f1d3589053e5d5ef"
+          "sha256": "4eba1049d0e035a8816c1ae90f366b7879087bbdd44f9aa814f946ff367e1721"
         },
         {
           "path": "static/family-media/one-reference.mp4",
@@ -149,7 +149,7 @@
         },
         {
           "path": "static/family-media/portrait.png",
-          "sha256": "7ead5a45cc35e62f430330cdea260d043091abca9068e0ade51c3cf3a51127e3"
+          "sha256": "c8563239c5625b9a32ed36a95ef51b254bc3f1f7ff43a11ff486a8775b7f2d8a"
         },
         {
           "path": "static/family-media/two-baseline.mp4",
@@ -157,7 +157,7 @@
         },
         {
           "path": "static/family-media/two-reconstruction.mp4",
-          "sha256": "9da30d1eb8cd5ab968af0667ccf844e8d86e181941f3b4015d6766e8f951bf83"
+          "sha256": "3cf1dd938bd98dd18f7a2845b58a85ccf9a564f603c4317ad3c94e599c3b4ad9"
         },
         {
           "path": "static/family-media/two-reference.mp4",
@@ -175,9 +175,10 @@
         "upstream_model": "https://huggingface.co/KlingTeam/LivePortrait"
       },
       "transformations": [
-        "Crop a still portrait from take IEO and a separate neutral calibration image from untrimmed take DFA.",
+        "Preload the full first frame of take IEO. Crop a separate neutral calibration image from untrimmed take DFA.",
         "Trim take DFA for the short reference and edit takes MTI, DFA, and IOM in order for the longer reference.",
-        "Extract Opus speech and calibrated relative facial motion. Render offline using the shared portrait."
+        "Extract Opus speech and calibrated relative facial motion. Render offline using the shared portrait.",
+        "Blend the generated face back into the full 480 × 360 preloaded still."
       ],
       "limitations": [
         "Acted research recordings from one actor with a fixed camera and background. The reel joins different takes.",
