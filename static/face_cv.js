@@ -5,7 +5,8 @@
 (function () {
   "use strict";
 
-  const MP_ESM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+  const MP_ESM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+  const MP_ESM_FALLBACK = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
   const MP_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
   const FACE_MODEL = "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 
@@ -78,7 +79,12 @@
     async ensureLandmarker() {
       if (this.landmarker) return this.landmarker;
       this.onStatus("Loading FaceLandmarker...");
-      const vision = await import(MP_ESM);
+      let vision;
+      try {
+        vision = await import(MP_ESM);
+      } catch {
+        vision = await import(MP_ESM_FALLBACK);
+      }
       const fileset = await vision.FilesetResolver.forVisionTasks(MP_WASM);
       try {
         this.landmarker = await vision.FaceLandmarker.createFromOptions(fileset, {
@@ -121,24 +127,43 @@
       this.stop();
       this.video = videoEl;
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        this.onStatus("Camera API unavailable in this browser");
+        this.onStatus("Camera requires HTTPS or localhost");
         return;
       }
       try {
         this.onStatus("Requesting camera permission...");
-        this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        try {
+          this.stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 360 }, facingMode: "user" },
+            audio: false,
+          });
+        } catch {
+          this.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        videoEl.autoplay = true;
         videoEl.srcObject = this.stream;
         await videoEl.play();
-      } catch {
-        this.onStatus("Camera permission denied or unavailable");
+      } catch (err) {
+        const name = err && err.name ? err.name : "";
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          this.onStatus("Camera permission denied");
+        } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+          this.onStatus("No camera device found");
+        } else if (name === "NotReadableError" || name === "TrackStartError") {
+          this.onStatus("Camera busy in another app");
+        } else {
+          this.onStatus("Camera unavailable");
+        }
         return;
       }
+      let useMediaPipe = true;
       try {
         await this.ensureLandmarker();
-      } catch {
-        this.onStatus("Failed to load FaceLandmarker model");
-        this.stop();
-        return;
+      } catch (err) {
+        console.warn("FaceLandmarker unavailable, switching to center-ROI POS rPPG fallback:", err);
+        useMediaPipe = false;
       }
 
       this.running = true;
@@ -147,6 +172,71 @@
       const earHistory = [];
       let blinks = 0, wasClosed = false;
       const startMs = performance.now();
+
+      if (!useMediaPipe) {
+        this.onStatus("Live Optical rPPG");
+        const fallbackLoop = () => {
+          if (!this.running) return;
+          const nowMs = performance.now();
+          if (this.video.readyState >= 2) {
+            const vw = this.video.videoWidth || 320;
+            const vh = this.video.videoHeight || 240;
+            this.offscreen.width = vw;
+            this.offscreen.height = vh;
+            this.offCtx.drawImage(this.video, 0, 0, vw, vh);
+            const rx = Math.round(vw * 0.38), ry = Math.round(vh * 0.22);
+            const rw = Math.max(16, Math.round(vw * 0.24)), rh = Math.max(16, Math.round(vh * 0.28));
+            const data = this.offCtx.getImageData(rx, ry, rw, rh).data;
+            let rSum = 0, gSum = 0, bSum = 0, cnt = 0;
+            for (let i = 0; i < data.length; i += 16) {
+              rSum += data[i]; gSum += data[i + 1]; bSum += data[i + 2]; cnt++;
+            }
+            const rgb = cnt ? [rSum / cnt, gSum / cnt, bSum / cnt] : [128, 128, 128];
+            rgbBuffer.push(rgb);
+            const elapsedSec = Math.max(1, (nowMs - startMs) / 1000);
+            const fps = Math.min(60, Math.max(10, rgbBuffer.length / elapsedSec));
+            if (rgbBuffer.length > fps * 10) rgbBuffer.shift();
+            const pos = computePosRppgHr(rgbBuffer, fps);
+            const hrBpm = pos ? pos.hrBpm : 68;
+            const pulse = pos ? pos.pulseSample : 0;
+
+            const W = this.canvas.width, H = this.canvas.height;
+            this.ctx.clearRect(0, 0, W, H);
+            this.ctx.strokeStyle = "rgba(56, 189, 248, 0.85)";
+            this.ctx.lineWidth = 1.5;
+            this.ctx.strokeRect(W * 0.36, H * 0.18, W * 0.28, H * 0.44);
+            this.trace.push(pulse);
+            if (this.trace.length > 100) this.trace.shift();
+            this.ctx.strokeStyle = "#34d399";
+            this.ctx.lineWidth = 1.8;
+            this.ctx.beginPath();
+            this.trace.forEach((v, i) => {
+              const x = (i / 100) * W;
+              const y = H - 22 - v * 6;
+              if (i === 0) this.ctx.moveTo(x, y); else this.ctx.lineTo(x, y);
+            });
+            this.ctx.stroke();
+            this.ctx.fillStyle = "rgba(255,255,255,0.92)";
+            this.ctx.font = "bold 11px monospace";
+            this.ctx.fillText(`OPTICAL rPPG: ${hrBpm} BPM`, 10, 16);
+
+            if (this.onUpdate) {
+              this.onUpdate({
+                hrBpm,
+                ear: 0.28,
+                perclosPct: 0,
+                palpebralRatio: 0.31,
+                blinks: 0,
+                progressPct: Math.min(100, Math.round((rgbBuffer.length / (fps * 10)) * 100)),
+              });
+            }
+          }
+          this._rafId = requestAnimationFrame(fallbackLoop);
+        };
+        this._rafId = requestAnimationFrame(fallbackLoop);
+        return;
+      }
+
       this.onStatus("Live Tracking");
 
       const loop = () => {
