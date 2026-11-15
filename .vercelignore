@@ -1,0 +1,15 @@
+assets/
+tests/
+docs/
+hal2030/ui/
+packaging/
+tools/
+.github/
+*.md
+*.bat
+*.sh
+desktop_app.py
+main.py
+requirements-build.txt
+requirements-dev.txt
+requirements-voice.txt

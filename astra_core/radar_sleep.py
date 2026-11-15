@@ -20,8 +20,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
-from scipy.signal import find_peaks, hilbert, iirnotch, sosfiltfilt
 
+from ._signal_np import find_peaks_np as find_peaks, hilbert_abs_np, notch_np
 from .standards import NASA_CARDIO_VITALS_STANDARDS
 from .vitals import _bandpass, compute_hrv_metrics
 
@@ -137,7 +137,7 @@ def extract_respiration_and_apnea(
 ) -> Dict[str, Any]:
     """Extract 0.1-0.5 Hz respiration rate, variability, and >=10 s apnea pauses."""
     resp_bp = _bandpass(phase, 0.10, 0.50, fs_hz, order=3)
-    env = np.abs(hilbert(resp_bp))
+    env = hilbert_abs_np(resp_bp)
     med_env = max(float(np.median(env)), 1e-6)
 
     # Mask motion-corrupted seconds for clean breath peak picking
@@ -197,8 +197,7 @@ def extract_cardiac_bcg_hrv(phase: np.ndarray, fs_hz: float, resp_rate_bpm: Opti
         for mult in (1, 2, 3):
             f_notch = f_resp * mult
             if 0.05 < f_notch < (0.45 * fs_hz):
-                b_n, a_n = iirnotch(f_notch, Q=12.0, fs=fs_hz)
-                sig = sosfiltfilt(np.array([[b_n[0], b_n[1], b_n[2], 1.0, a_n[1], a_n[2]]]), sig)
+                sig = notch_np(sig, f_notch, q=12.0, fs=fs_hz)
 
     bcg = _bandpass(sig, 0.85, min(2.8, 0.45 * fs_hz), fs_hz, order=3)
     bcg_std = float(np.std(bcg))

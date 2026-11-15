@@ -26,19 +26,155 @@ Exploration Atmosphere (8.2 psia / 34% O2) standards:
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-import pandas as pd
-from scipy.interpolate import CubicSpline
-from scipy.signal import butter, find_peaks, sosfiltfilt, welch
 
 from hal2030.paths import resource_root
 
+from ._signal_np import (
+    bandpass_np,
+    cubic_interp_np,
+    find_peaks_np as find_peaks,
+    rolling_median_np,
+    welch_np as welch,
+)
 from .standards import NASA_CARDIO_VITALS_STANDARDS
+
+
+class _LiteSeries:
+    """Minimal NumPy-backed series replacing pandas.Series in vitals.py."""
+
+    def __init__(self, data: Any):
+        if isinstance(data, _LiteSeries):
+            self._arr = data._arr
+        else:
+            self._arr = np.asarray(data)
+
+    @property
+    def empty(self) -> bool:
+        return len(self._arr) == 0
+
+    def __len__(self) -> int:
+        return len(self._arr)
+
+    @property
+    def iloc(self) -> "_LiteSeriesIloc":
+        return _LiteSeriesIloc(self._arr)
+
+    def to_numpy(self, dtype: Any = None) -> np.ndarray:
+        return np.asarray(self._arr, dtype=dtype) if dtype is not None else np.asarray(self._arr)
+
+    def mean(self) -> float:
+        return float(np.nanmean(self._arr.astype(float)))
+
+    def min(self) -> float:
+        return float(np.nanmin(self._arr.astype(float)))
+
+    def dropna(self) -> "_LiteSeries":
+        arr = self._arr.astype(float)
+        return _LiteSeries(arr[~np.isnan(arr)])
+
+    def __eq__(self, other: Any) -> np.ndarray:  # type: ignore[override]
+        return self._arr == other
+
+    def __ge__(self, other: Any) -> np.ndarray:
+        return self._arr.astype(float) >= other
+
+    def __le__(self, other: Any) -> np.ndarray:
+        return self._arr.astype(float) <= other
+
+    def __sub__(self, other: Any) -> np.ndarray:
+        return self._arr - other
+
+
+class _LiteSeriesIloc:
+    def __init__(self, arr: np.ndarray):
+        self._arr = arr
+
+    def __getitem__(self, item: Any) -> Any:
+        return self._arr[item]
+
+
+class _LiteFrameIloc:
+    def __init__(self, frame: "_LiteFrame"):
+        self._f = frame
+
+    def __getitem__(self, item: Any) -> Any:
+        if isinstance(item, (int, np.integer)):
+            return {k: v[item] for k, v in self._f._cols.items()}
+        return _LiteFrame({k: v[item] for k, v in self._f._cols.items()})
+
+
+class _LiteFrame:
+    """Minimal NumPy-backed table replacing pandas.DataFrame in vitals.py."""
+
+    def __init__(self, data: Dict[str, Any]):
+        self._cols: Dict[str, np.ndarray] = {k: np.asarray(v) for k, v in data.items()}
+
+    @property
+    def columns(self) -> List[str]:
+        return list(self._cols.keys())
+
+    @columns.setter
+    def columns(self, names: List[str]) -> None:
+        self._cols = {new: arr for new, arr in zip(names, self._cols.values())}
+
+    @property
+    def empty(self) -> bool:
+        return len(self) == 0
+
+    def __len__(self) -> int:
+        if not self._cols:
+            return 0
+        first = next(iter(self._cols.values()))
+        return len(first)
+
+    @property
+    def iloc(self) -> _LiteFrameIloc:
+        return _LiteFrameIloc(self)
+
+    def __getitem__(self, key: Any) -> Any:
+        if isinstance(key, str):
+            return _LiteSeries(self._cols[key])
+        mask = np.asarray(key, dtype=bool)
+        return _LiteFrame({k: v[mask] for k, v in self._cols.items()})
+
+
+def _to_numeric_arr(values: Any) -> np.ndarray:
+    arr = np.asarray(values)
+    if np.issubdtype(arr.dtype, np.number):
+        return arr.astype(float)
+    out = np.empty(len(arr), dtype=float)
+    for i, v in enumerate(arr):
+        try:
+            out[i] = float(v)
+        except (TypeError, ValueError):
+            out[i] = np.nan
+    return out
+
+
+def _read_csv_lite(path: Path) -> _LiteFrame:
+    with path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.reader(f)
+        headers = [h.strip() for h in next(reader)]
+        cols: List[List[str]] = [[] for _ in headers]
+        for row in reader:
+            for i, val in enumerate(row):
+                if i < len(cols):
+                    cols[i].append(val)
+    data: Dict[str, np.ndarray] = {}
+    for h, raw_vals in zip(headers, cols):
+        try:
+            data[h] = np.array([float(v) if v != "" else np.nan for v in raw_vals], dtype=float)
+        except ValueError:
+            data[h] = np.array(raw_vals, dtype=object)
+    return _LiteFrame(data)
 
 DATA_ROOT = resource_root() / "data"
 BIDMC_DIR = DATA_ROOT / "physionet_bidmc"
@@ -107,8 +243,8 @@ def load_physionet_record(record_id: str) -> Dict[str, Any]:
         num_path = BIDMC_DIR / f"{record_id}_Numerics.csv"
         if not sig_path.exists() or not num_path.exists():
             raise FileNotFoundError(f"Missing PhysioNet BIDMC files for '{record_id}' in {BIDMC_DIR}")
-        sig = pd.read_csv(sig_path)
-        num = pd.read_csv(num_path)
+        sig = _read_csv_lite(sig_path)
+        num = _read_csv_lite(num_path)
         sig.columns = [c.strip() for c in sig.columns]
         num.columns = [c.strip() for c in num.columns]
         t = sig["Time [s]"].to_numpy(dtype=float)
@@ -129,21 +265,27 @@ def load_physionet_record(record_id: str) -> Dict[str, Any]:
     if not csv_path.exists():
         raise FileNotFoundError(f"Missing PhysioNet PTT file '{csv_path}'")
 
-    raw = pd.read_csv(csv_path)
-    t_dt = pd.to_datetime(raw["time"])
-    t_sec = (t_dt - t_dt.iloc[0]).dt.total_seconds().to_numpy(dtype=float)
+    raw = _read_csv_lite(csv_path)
+    t_vals = raw["time"].to_numpy()
+    t0 = datetime.fromisoformat(str(t_vals[0]).replace("Z", "+00:00"))
+    t_sec = np.array(
+        [(datetime.fromisoformat(str(v).replace("Z", "+00:00")) - t0).total_seconds() for v in t_vals],
+        dtype=float,
+    )
     fs_hz = round(float((len(t_sec) - 1) / max(t_sec[-1], 1e-6)), 2)
 
     # Normalize into unified stream dataframe (downsample 500 Hz -> 250 Hz Astroskin rate)
     step = 2 if fs_hz >= 450.0 else 1
     out_fs = round(fs_hz / step, 2)
-    sliced = raw.iloc[::step].reset_index(drop=True)
+    sliced = raw.iloc[::step]
     t_out = t_sec[::step]
 
     # Normalize 16-bit ADC counts to mV-like float units; invert reflectance PPG so systole points upward
-    ecg_norm = (sliced["ecg"].to_numpy(dtype=float) - np.median(sliced["ecg"])) / 1000.0
-    pleth_norm = -(sliced["pleth_1"].to_numpy(dtype=float) - np.median(sliced["pleth_1"])) / 1000.0
-    sig = pd.DataFrame({"Time [s]": t_out, "II": ecg_norm, "PLETH": pleth_norm})
+    ecg_arr = sliced["ecg"].to_numpy(dtype=float)
+    pleth_arr = sliced["pleth_1"].to_numpy(dtype=float)
+    ecg_norm = (ecg_arr - np.median(ecg_arr)) / 1000.0
+    pleth_norm = -(pleth_arr - np.median(pleth_arr)) / 1000.0
+    sig = _LiteFrame({"Time [s]": t_out, "II": ecg_norm, "PLETH": pleth_norm})
 
     skin_temp = round(float(sliced["temp_1"].mean()), 2) if "temp_1" in sliced.columns else None
     accel_rms = None
@@ -155,9 +297,9 @@ def load_physionet_record(record_id: str) -> Dict[str, Any]:
         accel_rms = round(float(np.std(mag)), 3)
 
     cuff_sbp = 115.5
-    num_df: Optional[pd.DataFrame] = None
+    num_df: Optional[_LiteFrame] = None
     if info_path.exists():
-        info = pd.read_csv(info_path)
+        info = _read_csv_lite(info_path)
         row = info[info["record"] == csv_name]
         if not row.empty:
             r0 = row.iloc[0]
@@ -165,7 +307,7 @@ def load_physionet_record(record_id: str) -> Dict[str, Any]:
             t_1hz = np.arange(0.0, t_out[-1] + 1.0, 1.0)
             spo2_interp = np.linspace(float(r0["spo2_start"]), float(r0["spo2_end"]), len(t_1hz))
             hr_interp = np.linspace(float(r0["hr_1_start"]), float(r0["hr_1_end"]), len(t_1hz))
-            num_df = pd.DataFrame({"Time [s]": t_1hz, "HR": hr_interp, "SpO2": np.round(spo2_interp, 1)})
+            num_df = _LiteFrame({"Time [s]": t_1hz, "HR": hr_interp, "SpO2": np.round(spo2_interp, 1)})
 
     return {
         "sig_df": sig,
@@ -185,8 +327,7 @@ def _bandpass(signal: np.ndarray, low_hz: float, high_hz: float, fs_hz: float, o
     lo = max(low_hz, 0.01)
     if lo >= hi or len(centered) < 24:
         return centered
-    sos = butter(order, [lo, hi], btype="bandpass", fs=fs_hz, output="sos")
-    return sosfiltfilt(sos, centered)
+    return bandpass_np(centered, lo, hi, fs_hz, order=order)
 
 
 def _select_best_ecg_lead(sig_df: pd.DataFrame, fs_hz: float) -> Tuple[str, np.ndarray]:
@@ -259,8 +400,7 @@ def classify_rr_and_ectopy(r_peaks: np.ndarray, fs_hz: float) -> Dict[str, Any]:
     rr_ms = np.diff(r_times_s) * 1000.0
     valid_phys = (rr_ms >= 300.0) & (rr_ms <= 2000.0)
 
-    rr_series = pd.Series(np.where(valid_phys, rr_ms, np.nan))
-    local_med = rr_series.rolling(window=11, center=True, min_periods=1).median().bfill().ffill().to_numpy()
+    local_med = rolling_median_np(np.where(valid_phys, rr_ms, np.nan), window=11, center=True)
 
     ectopic_mask = np.zeros(len(rr_ms), dtype=bool)
     for i in range(len(rr_ms)):
@@ -377,7 +517,7 @@ def compute_hrv_metrics(nn_ms: np.ndarray, nn_times_s: np.ndarray) -> Dict[str, 
         if len(uniq_t) >= 16:
             fs_interp = 4.0
             grid_t = np.arange(uniq_t[0], uniq_t[-1], 1.0 / fs_interp)
-            interp_nn = CubicSpline(uniq_t, uniq_nn)(grid_t) - np.mean(uniq_nn)
+            interp_nn = cubic_interp_np(grid_t, uniq_t, uniq_nn) - np.mean(uniq_nn)
             freqs, psd = welch(interp_nn, fs=fs_interp, nperseg=min(256, len(interp_nn)))
             lf_mask = (freqs >= 0.04) & (freqs < 0.15)
             hf_mask = (freqs >= 0.15) & (freqs <= 0.40)
@@ -584,7 +724,7 @@ def _estimate_edr_respiration_rate(ecg: np.ndarray, r_peaks: np.ndarray, fs_hz: 
     r_amps = clean[r_peaks]
     fs_edr = 4.0
     grid_t = np.arange(r_times[0], r_times[-1], 1.0 / fs_edr)
-    edr_sig = CubicSpline(r_times, r_amps)(grid_t)
+    edr_sig = cubic_interp_np(grid_t, r_times, r_amps)
     edr_bp = _bandpass(edr_sig, 0.10, 0.60, fs_edr, order=3)
     edr_std = float(np.std(edr_bp))
     if edr_std < 1e-6:
@@ -636,26 +776,28 @@ def compute_respiration_and_spo2(
 
     if num_df is not None and not num_df.empty:
         if "HR" in num_df.columns:
-            hr_s = pd.to_numeric(num_df["HR"], errors="coerce").dropna()
-            if not hr_s.empty:
-                ref_hr_mean = round(float(hr_s.mean()), 1)
+            hr_arr = _to_numeric_arr(num_df["HR"].to_numpy())
+            hr_arr = hr_arr[~np.isnan(hr_arr)]
+            if len(hr_arr):
+                ref_hr_mean = round(float(np.mean(hr_arr)), 1)
         if "PULSE" in num_df.columns:
-            p_s = pd.to_numeric(num_df["PULSE"], errors="coerce").dropna()
-            if not p_s.empty:
-                ref_pulse_mean = round(float(p_s.mean()), 1)
+            p_arr = _to_numeric_arr(num_df["PULSE"].to_numpy())
+            p_arr = p_arr[~np.isnan(p_arr)]
+            if len(p_arr):
+                ref_pulse_mean = round(float(np.mean(p_arr)), 1)
         if ref_hr_mean is not None and ref_pulse_mean is not None:
             ref_pulse_deficit = round(float(max(0.0, ref_hr_mean - ref_pulse_mean)), 1)
 
         if "SpO2" in num_df.columns:
-            spo2_raw = pd.to_numeric(num_df["SpO2"], errors="coerce")
-            spo2_valid = spo2_raw.dropna()
+            spo2_raw = _to_numeric_arr(num_df["SpO2"].to_numpy())
+            spo2_valid = spo2_raw[~np.isnan(spo2_raw)]
             spo2_cov_pct = round(100.0 * len(spo2_valid) / max(len(num_df), 1), 1)
-            if not spo2_valid.empty:
-                spo2_mean = round(float(spo2_valid.mean()), 1)
-                spo2_min = round(float(spo2_valid.min()), 1)
+            if len(spo2_valid):
+                spo2_mean = round(float(np.mean(spo2_valid)), 1)
+                spo2_min = round(float(np.min(spo2_valid)), 1)
 
-                base = spo2_valid.rolling(window=60, min_periods=1).median().to_numpy()
-                vals = spo2_valid.to_numpy()
+                base = rolling_median_np(spo2_valid, window=60, center=False)
+                vals = spo2_valid
                 dips = 0
                 last_dip = -15
                 for idx in range(len(vals)):

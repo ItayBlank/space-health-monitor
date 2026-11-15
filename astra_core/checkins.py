@@ -31,14 +31,27 @@ PBKDF2_ROUNDS = 310_000
 
 def store_path() -> Path:
     """Return the private runtime database path (override for local tests)."""
+    import tempfile
+
     configured = os.environ.get("ASTRA_PRIVATE_DATA_DIR")
-    base = Path(configured) if configured else Path.home() / ".astra-core" / "private"
-    base.mkdir(parents=True, exist_ok=True)
-    try:
-        base.chmod(0o700)
-    except OSError:
-        pass
-    return base / "checkins.sqlite3"
+    candidates = [Path(configured)] if configured else [
+        Path.home() / ".astra-core" / "private",
+        Path(tempfile.gettempdir()) / ".astra-core" / "private",
+    ]
+    for base in candidates:
+        try:
+            base.mkdir(parents=True, exist_ok=True)
+            probe = base / ".write_test"
+            probe.touch()
+            probe.unlink(missing_ok=True)
+            try:
+                base.chmod(0o700)
+            except OSError:
+                pass
+            return base / "checkins.sqlite3"
+        except OSError:
+            continue
+    return Path(tempfile.gettempdir()) / "checkins.sqlite3"
 
 
 @contextmanager
