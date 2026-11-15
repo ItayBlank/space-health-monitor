@@ -1167,8 +1167,9 @@ body.theme-night .dot-sm { border-color: #18232e; }
 
 .gc-avatar-wrap {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 88px;
+  height: 88px;
+  flex-shrink: 0;
 }
 
 .gc-avatar-wrap img {
@@ -1176,7 +1177,8 @@ body.theme-night .dot-sm { border-color: #18232e; }
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 2.5px solid var(--green-solid);
+  object-position: center 20%;
+  border: 3px solid var(--green-solid);
 }
 
 .glance-card.gc-warning .gc-avatar-wrap img { border-color: var(--orange-solid); }
@@ -2408,7 +2410,7 @@ th { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); te
   #rs-shelter-guide .sbar-track { grid-column: 1 / -1; order: 3; }
   .crew-glance-grid { grid-template-columns: 1fr; gap: 10px; }
   .glance-card { padding: 13px; gap: 8px; }
-  .gc-avatar-wrap { width: 48px; height: 48px; }
+  .gc-avatar-wrap { width: 68px; height: 68px; }
   .astronaut-wrap { height: 270px; }
   .zone-float-popup { display: none; }
   .mobile-float-bar { display: flex; }
