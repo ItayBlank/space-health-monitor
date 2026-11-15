@@ -1,4 +1,8 @@
-# Data, simulation rules, and extension points
+# Legacy telemetry data and rules
+
+Scope: the original synthetic replay and shared HAL2030 rules. The web app also
+uses `astra_core` research replay/model inputs; this document does not describe
+all of them. See [web architecture](ARCHITECTURE.md) and [status](PROJECT_VISION.md).
 
 ## What the recording represents
 

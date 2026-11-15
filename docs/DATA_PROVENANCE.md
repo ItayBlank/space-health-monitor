@@ -82,3 +82,18 @@ Recommended next step: a separate importer that validates headers/values, preser
 missingness and condition labels, and compares derived summaries with published
 summary columns before selecting a small reproducible subset. Do not convert this
 cohort into astronaut norms or derive an operational sleep threshold from it.
+
+## Published PVT summary-pair calculation
+
+On 2026-11-14, `participants.tsv` from the pinned 1.0.8 release was rechecked.
+Select rows where both `PVT_item2_NS` and `PVT_item2_SD` are numeric; compute each
+row's `SD - NS`, then the arithmetic mean of those differences. This gives **30
+pairs, +41.2166666667 ms** (rounded +41 ms). The median paired difference is 44 ms.
+This is a difference between published session medians, not a pooled-trial mean,
+not the median of all differences, and not a clinical effect threshold.
+The original-byte hash of `participants.tsv` is in the audit manifest.
+
+The raw-file audit remains correct at **29 complete trial-file pairs**. Published
+summary coverage differs from raw-file coverage; preserve that distinction when
+constructing the research replay for #12. No participant measurements were imported
+into the app by this calculation.

@@ -52,3 +52,28 @@ The report describes wearable collection of single-lead ECG, heart rate, HRV, re
 ## Asset provenance
 
 See `assets/ASSETS.md` for fictional portrait provenance. The HAL2030 lens and other interface instruments are drawn by project code. The supplied reference images inspired the requested visual direction; the project does not depend on externally hosted art at runtime.
+
+## Web roadmap evidence (2026-11-14)
+
+These sources support feature motivation, not operational validation or software
+compliance. The earlier sections describe the original synthetic desktop scope;
+the web migration also includes research CSVs whose source registry needs completion.
+
+- [Private mood/stress issue #11](https://github.com/ItayBlank/space-health-monitor/issues/11):
+  [OCHMO-STD-100.1A §6.6.2, supplied copy](https://ntrs.nasa.gov/api/citations/20240006194/downloads/OCHMO%20STD%20100%201A%2005142024.pdf)
+  describes private psychological conferences addressing mood and performance.
+  This copy contains placeholder approval dates; it is not evidence that this
+  prototype meets a verified current operational standard.
+  [Inspiration4, Extended Data Figure 10](https://www.nature.com/articles/s41586-024-07648-x)
+  is the field-selection evidence supplied for mood/stress self-ratings.
+  The three-check-in rule and baseline algorithm are prototype choices.
+- [Pre-task PVT issue #12](https://github.com/ItayBlank/space-health-monitor/issues/12):
+  [Jones et al. (2022)](https://pmc.ncbi.nlm.nih.gov/articles/PMC8919197/)
+  links short sleep and poorer vigilant attention in 24 ISS astronauts.
+  [Piechowski et al. (2024)](https://doi.org/10.1038/s41526-024-00361-z)
+  relates sleep-loss vulnerability on PVT to simulated docking performance; its
+  PVT was ten minutes. Neither establishes our browser timing or two-hour gate.
+  [OpenNeuro ds004902 v1.0.8](https://openneuro.org/datasets/ds004902/versions/1.0.8)
+  supplies research reference records, not a personal astronaut baseline.
+  See [the reproducible summary calculation](DATA_PROVENANCE.md#published-pvt-summary-pair-calculation)
+  for +41.2 ms across 30 summary pairs versus 29 raw-file pairs.

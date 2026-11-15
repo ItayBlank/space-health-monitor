@@ -1,5 +1,10 @@
 # Self-administered near-vision demo
 
+The detailed interaction instructions below describe the desktop implementation.
+The web app exposes vision under **Sensors** and uses `/api/hal/vision/levels`
+and `/api/hal/vision/submit`. Verify browser calibration, microphone and report
+parity independently; desktop validation does not establish web equivalence.
+
 Open **Crew detail**, choose a crew member, and click **Start vision check**.
 A separate window opens. Telemetry replay pauses, while the simulated downlink
 continues. Closing the exam releases its microphone; replay stays paused.
