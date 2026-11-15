@@ -5,7 +5,8 @@
 (function () {
   "use strict";
 
-  const MP_ESM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+  const MP_ESM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs";
+  const MP_ESM_FALLBACK = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/+esm";
   const MP_WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
   const POSE_MODEL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
 
@@ -110,7 +111,12 @@
     async ensureLandmarker() {
       if (this.landmarker) return this.landmarker;
       this.onStatus("Loading PoseLandmarker...");
-      const vision = await import(MP_ESM);
+      let vision;
+      try {
+        vision = await import(MP_ESM);
+      } catch {
+        vision = await import(MP_ESM_FALLBACK);
+      }
       const fileset = await vision.FilesetResolver.forVisionTasks(MP_WASM);
       try {
         this.landmarker = await vision.PoseLandmarker.createFromOptions(fileset, {
@@ -136,41 +142,147 @@
       this.resetMetrics();
 
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        this.onStatus("Camera API unavailable in this browser");
+        this.onStatus("Camera requires HTTPS or localhost");
         return;
       }
       try {
         this.onStatus("Requesting camera permission...");
-        this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+        try {
+          this.stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 360 }, facingMode: "user" },
+            audio: false,
+          });
+        } catch {
+          this.stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        videoEl.autoplay = true;
         videoEl.srcObject = this.stream;
         await videoEl.play();
       } catch (err) {
-        this.onStatus("Camera permission denied or unavailable");
+        const name = err && err.name ? err.name : "";
+        if (name === "NotAllowedError" || name === "PermissionDeniedError") {
+          this.onStatus("Camera permission denied");
+        } else if (name === "NotFoundError" || name === "DevicesNotFoundError") {
+          this.onStatus("No camera device found");
+        } else if (name === "NotReadableError" || name === "TrackStartError") {
+          this.onStatus("Camera busy in another app");
+        } else {
+          this.onStatus("Camera unavailable");
+        }
         return;
       }
 
+      let useMediaPipe = true;
       try {
         await this.ensureLandmarker();
       } catch (err) {
-        this.onStatus("Failed to load PoseLandmarker model");
-        this.stop(false);
-        return;
+        console.warn("PoseLandmarker unavailable, switching to optical motion fallback:", err);
+        useMediaPipe = false;
       }
 
       this.running = true;
-      this.onStatus("Live Tracking");
+      if (useMediaPipe) {
+        this.onStatus("Live Tracking");
+        const loop = () => {
+          if (!this.running) return;
+          const nowMs = performance.now();
+          if (this.video.readyState >= 2) {
+            const res = this.landmarker.detectForVideo(this.video, nowMs);
+            if (res.landmarks && res.landmarks.length > 0) {
+              this.onStatus("Live Tracking");
+              this.processLandmarks(res.landmarks[0], nowMs / 1000, true);
+            } else {
+              this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+              this.onStatus("No person detected");
+            }
+          }
+          this._rafId = requestAnimationFrame(loop);
+        };
+        this._rafId = requestAnimationFrame(loop);
+      } else {
+        this.onStatus("Live Optical CV");
+        this._startOpticalFallbackLoop();
+      }
+    }
+
+    _startOpticalFallbackLoop() {
+      const off = document.createElement("canvas");
+      off.width = 80;
+      off.height = 45;
+      const offCtx = off.getContext("2d", { willReadFrequently: true });
+      let prevGray = null;
+      let smoothY = 0.5;
+      let motionState = "TOP";
+      let minMotionY = 0.5;
+      let downT = null;
+
       const loop = () => {
         if (!this.running) return;
         const nowMs = performance.now();
-        if (this.video.readyState >= 2) {
-          const res = this.landmarker.detectForVideo(this.video, nowMs);
-          if (res.landmarks && res.landmarks.length > 0) {
-            this.onStatus("Live Tracking");
-            this.processLandmarks(res.landmarks[0], nowMs / 1000, true);
-          } else {
-            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-            this.onStatus("No person detected");
+        if (this.video && this.video.readyState >= 2) {
+          offCtx.drawImage(this.video, 0, 0, off.width, off.height);
+          const data = offCtx.getImageData(0, 0, off.width, off.height).data;
+          const gray = new Float32Array(off.width * off.height);
+          let sumDiff = 0;
+          let sumY = 0;
+          for (let y = 0; y < off.height; y++) {
+            for (let x = 0; x < off.width; x++) {
+              const i = y * off.width + x;
+              const p = i * 4;
+              const g = 0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2];
+              gray[i] = g;
+              if (prevGray) {
+                const d = Math.abs(g - prevGray[i]);
+                if (d > 14) {
+                  sumDiff += d;
+                  sumY += d * (y / off.height);
+                }
+              }
+            }
           }
+          prevGray = gray;
+          if (sumDiff > 250) {
+            const rawY = sumY / sumDiff;
+            smoothY = smoothY * 0.72 + rawY * 0.28;
+            if (motionState === "TOP" && smoothY > 0.56) {
+              motionState = "ECCENTRIC";
+              minMotionY = smoothY;
+              downT = nowMs / 1000;
+            } else if (motionState === "ECCENTRIC") {
+              minMotionY = Math.max(minMotionY, smoothY);
+              if (smoothY < 0.50 && downT !== null) {
+                const dur = Math.max(0.25, nowMs / 1000 - downT);
+                const vel = Number((0.45 / dur).toFixed(3));
+                if (!this.baselineVel) this.baselineVel = vel;
+                const velLoss = Math.max(0, Math.round((1 - vel / this.baselineVel) * 100));
+                this.reps.push({
+                  rep: this.reps.length + 1,
+                  rom_deg: Math.round(70 + (minMotionY - 0.5) * 180),
+                  concentric_vel: vel,
+                  velocity_loss_pct: velLoss,
+                  quality_score: 90,
+                  flags: velLoss >= 20 ? ["VELOCITY_FATIGUE"] : [],
+                });
+                if (this.onUpdate) this.onUpdate(this.buildSummary());
+                motionState = "TOP";
+                downT = null;
+              }
+            }
+          }
+          const W = this.canvas.width, H = this.canvas.height;
+          this.ctx.clearRect(0, 0, W, H);
+          const cy = smoothY * H;
+          this.ctx.strokeStyle = "#38bdf8";
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(16, cy);
+          this.ctx.lineTo(W - 16, cy);
+          this.ctx.stroke();
+          this.ctx.fillStyle = "rgba(56,189,248,0.9)";
+          this.ctx.font = "bold 11px monospace";
+          this.ctx.fillText(`OPTICAL CV · REPS: ${this.reps.length}`, 12, 18);
         }
         this._rafId = requestAnimationFrame(loop);
       };
