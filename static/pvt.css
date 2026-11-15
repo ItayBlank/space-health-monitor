@@ -63,4 +63,16 @@ body.theme-night .pvt-state-grid > div, body.theme-night #pvt-records-list li,
 body.theme-night .pvt-entry-form { background:#0b1830aa; border-color:#ffffff22; }
 body.theme-night .pvt-state-grid strong, body.theme-night #pvt-records-list li strong { color:#edf4fb; }
 body.theme-night .pvt-entry-form input, body.theme-night .pvt-entry-form .eng-input { color:#edf4fb; background:#101f31; border-color:#ffffff33; }
+.pvt-correlation-card { margin: 14px 0; padding: 16px; border-radius: 14px; border: 1px solid var(--sub-border, #b8c6d4); background: var(--sub-bg, #f4f7fa); display: grid; gap: 12px; }
+.pvt-corr-context { font-weight: 700; font-size: 1.02rem; margin-top: 4px; color: var(--ink, #172b40); }
+.pvt-corr-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.pvt-latency-bar-wrap { display: grid; gap: 6px; }
+.pvt-latency-track { height: 10px; border-radius: 999px; background: rgba(120, 140, 170, 0.22); overflow: hidden; }
+.pvt-latency-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--orange-solid, #f97316), var(--red-solid, #ef4444)); transition: width 0.3s ease; }
+.pvt-latency-fill.is-nominal { background: linear-gradient(90deg, var(--blue-accent, #0284c7), var(--green-solid, #10b981)); }
+.pvt-latency-label { font-family: var(--font-mono, monospace); font-size: 0.78rem; font-weight: 700; color: var(--ink-soft, #455c72); }
+body.theme-night .pvt-correlation-card { background: #0b1830aa; border-color: #ffffff22; }
+body.theme-night .pvt-corr-context { color: #edf4fb; }
+body.theme-night .pvt-latency-label { color: #a9bbce; }
+@media (max-width: 700px) { .pvt-corr-tiles { grid-template-columns: 1fr; } }
 

@@ -5454,5 +5454,109 @@ function checkGentleAudioAlerts() {
 
     setMedHubMode(medhubState.mode);
     loadClinicalHub();
+    initKitLocator();
+  }
+
+  const KIT_BAYS = [
+    { id: "bay-01", code: "BAY 01", name: "Optics & SANS Kit", devices: "Ophthalmoscope · Amsler", location: "Columbus Deck · Rack A1" },
+    { id: "bay-02", code: "BAY 02", name: "Cardiac & Airway Kit", devices: "12-Lead ECG · Pulse Ox · AED", location: "Columbus Deck · Rack A2" },
+    { id: "bay-03", code: "BAY 03", name: "Trauma & Splints", devices: "Hemostatic · Immobilizer", location: "Node 2 · Locker B4" },
+    { id: "bay-04", code: "BAY 04", name: "IV & Meds Pack", devices: "Saline · Beta-Blocker · Epi", location: "Destiny Core · Rack C1" },
+  ];
+  const kitState = { selectedId: "bay-02", beaconId: "bay-02", pulledIds: new Set() };
+
+  function renderKitLocator() {
+    const grid = document.getElementById("kit-bay-grid");
+    const pill = document.getElementById("kit-locator-pill");
+    const status = document.getElementById("kit-locator-status");
+    if (!grid) return;
+
+    const selected = KIT_BAYS.find((b) => b.id === kitState.selectedId) || KIT_BAYS[1];
+    grid.innerHTML = KIT_BAYS.map((bay) => {
+      const isSelected = bay.id === kitState.selectedId;
+      const isBeacon = bay.id === kitState.beaconId;
+      const isPulled = kitState.pulledIds.has(bay.id);
+      const cls = [
+        "kit-bay-card",
+        isSelected ? "is-selected" : "",
+        isBeacon ? "is-beacon" : "",
+        isPulled ? "is-pulled" : "",
+      ].filter(Boolean).join(" ");
+      const badge = isPulled
+        ? `<span class="triage-pill pill-nominal">KIT PULLED</span>`
+        : isBeacon
+          ? `<span class="triage-pill pill-warning"><i class="kit-led-dot"></i>ACTIVE BEACON · LED LIT · PULL KIT</span>`
+          : `<span class="triage-pill pill-nominal">STANDBY</span>`;
+      return `
+        <button type="button" class="${cls}" data-bay-id="${bay.id}">
+          <div class="kit-bay-top">
+            <span class="kit-bay-code">${bay.code}</span>
+            ${badge}
+          </div>
+          <h3 class="kit-bay-title">${bay.name}</h3>
+          <div class="kit-bay-devices">${bay.devices}</div>
+          <div class="kit-bay-location">📍 ${bay.location}</div>
+        </button>
+      `;
+    }).join("");
+
+    grid.querySelectorAll(".kit-bay-card").forEach((card) => {
+      card.addEventListener("click", () => {
+        kitState.selectedId = card.dataset.bayId;
+        renderKitLocator();
+      });
+    });
+
+    if (pill) {
+      if (kitState.pulledIds.has(selected.id)) {
+        pill.className = "triage-pill pill-nominal";
+        pill.textContent = `${selected.code} · KIT PULLED`;
+      } else if (kitState.beaconId === selected.id) {
+        pill.className = "triage-pill pill-warning";
+        pill.textContent = `${selected.code} · ACTIVE BEACON`;
+      } else {
+        pill.className = "triage-pill pill-nominal";
+        pill.textContent = `${selected.code} · SELECTED`;
+      }
+    }
+    if (status) {
+      if (kitState.pulledIds.has(selected.id)) {
+        status.textContent = `${selected.code} (${selected.name}) confirmed pulled from ${selected.location}.`;
+      } else if (kitState.beaconId === selected.id) {
+        status.textContent = `${selected.code} LED beacon pulsing at ${selected.location} — pull ${selected.name} (${selected.devices}).`;
+      } else {
+        status.textContent = `${selected.code} selected (${selected.location}). Click Toggle LED Beacon to illuminate rack guide.`;
+      }
+    }
+  }
+
+  function jumpToKitLocator(bayId = "bay-02") {
+    kitState.selectedId = bayId;
+    kitState.beaconId = bayId;
+    setMedHubMode("simple");
+    if (typeof switchLevel === "function") switchLevel("medhub");
+    renderKitLocator();
+    setTimeout(() => {
+      document.getElementById("medhub-kit-locator")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 80);
+  }
+
+  function initKitLocator() {
+    renderKitLocator();
+    document.getElementById("kit-beacon-toggle-btn")?.addEventListener("click", () => {
+      kitState.beaconId = kitState.beaconId === kitState.selectedId ? null : kitState.selectedId;
+      renderKitLocator();
+    });
+    document.getElementById("kit-confirm-pulled-btn")?.addEventListener("click", () => {
+      if (kitState.pulledIds.has(kitState.selectedId)) {
+        kitState.pulledIds.delete(kitState.selectedId);
+      } else {
+        kitState.pulledIds.add(kitState.selectedId);
+        if (kitState.beaconId === kitState.selectedId) kitState.beaconId = null;
+      }
+      renderKitLocator();
+    });
+    document.getElementById("csa-open-kits-btn")?.addEventListener("click", () => jumpToKitLocator("bay-02"));
+    document.getElementById("cwb-locator-btn")?.addEventListener("click", () => jumpToKitLocator("bay-02"));
   }
 })();

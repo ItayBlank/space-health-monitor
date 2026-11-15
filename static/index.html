@@ -140,7 +140,10 @@
       <!-- CREW-WIDE HABITAT ALERT BANNER -->
       <div id="crew-wide-banner" class="crew-wide-banner hidden" role="alert">
         <div class="cwb-left"><span id="cwb-badge" class="triage-pill pill-warning">CREW-WIDE ALERT</span><div class="cwb-copy"><strong id="cwb-title"></strong><div id="cwb-detail" class="cwb-detail"></div></div></div>
-        <button id="cwb-action-btn" class="btn-glass-pri cwb-btn" type="button">Resolve for All Crew</button>
+        <div class="cwb-actions">
+          <button id="cwb-locator-btn" class="btn-glass-sec cwb-btn" type="button">📍 Locate Emergency Kits</button>
+          <button id="cwb-action-btn" class="btn-glass-pri cwb-btn" type="button">Resolve for All Crew</button>
+        </div>
       </div>
 
       <!-- INTERACTIVE 24H COMPANION SIMULATION BAR -->
@@ -294,9 +297,52 @@
           <div id="checkins-private" class="hidden">
             <div class="checkins-toolbar">
               <div><span class="triage-pill pill-nominal">PRIVATE · SIGNED IN</span><span id="checkins-owner"></span></div>
-              <button id="checkins-logout" class="btn-glass-sec" type="button">Lock &amp; sign out</button>
+              <div class="checkins-toolbar-actions">
+                <button id="checkins-open-home-btn" class="btn-glass-sec" type="button">Message from Home</button>
+                <button id="checkins-logout" class="btn-glass-sec" type="button">Lock &amp; sign out</button>
+              </div>
             </div>
             <div id="checkins-followup" class="sub-glass checkins-followup hidden" role="status"></div>
+            <div id="checkins-home-card" class="sub-glass checkins-home-card hidden" role="region" aria-label="Message from Home and Video Uplink">
+              <div class="checkins-home-head">
+                <div>
+                  <span id="checkins-home-badge" class="triage-pill pill-warning">LOW MOOD DETECTED · PRIVATE SUPPORT</span>
+                  <h2 id="checkins-home-title">Your mood has been lower lately. Watch a message from home?</h2>
+                  <p id="checkins-home-sub">Reconstructed locally from 11% motion keyframes so family video arrives even over constrained Mars bandwidth.</p>
+                </div>
+                <button id="checkins-home-dismiss-btn" class="mini-link-btn" type="button">Dismiss</button>
+              </div>
+              <div class="checkins-home-actions">
+                <button id="checkins-watch-home-btn" class="btn-glass-pri" type="button">Watch Message from Home</button>
+                <button id="checkins-call-home-btn" class="btn-glass-sec" type="button">Call Home (Uplink)</button>
+              </div>
+              <div id="checkins-recon-box" class="checkins-recon-box hidden" aria-live="polite">
+                <div class="checkins-recon-meta">
+                  <strong id="checkins-recon-stage">Local Avatar + Motion Reconstruction</strong>
+                  <span id="checkins-recon-pct" class="triage-pill pill-nominal">0% · 89% LESS DATA</span>
+                </div>
+                <div class="checkins-recon-track"><div id="checkins-recon-fill" class="checkins-recon-fill"></div></div>
+              </div>
+              <div id="checkins-mars-player" class="checkins-mars-player hidden">
+                <div class="checkins-mars-bar">
+                  <span class="triage-pill pill-nominal">MARS PLAYBACK · RECONSTRUCTED</span>
+                  <span class="triage-pill pill-warning">89% LESS DATA SENT</span>
+                </div>
+                <video id="checkins-home-video" src="/static/assets/message_from_home.mp4" controls playsinline preload="metadata"></video>
+              </div>
+              <div id="checkins-uplink-box" class="checkins-uplink-box hidden" aria-live="polite">
+                <div class="checkins-uplink-top">
+                  <span id="checkins-uplink-pill" class="triage-pill pill-nominal">OPTICAL UPLINK · 21m 14s ONE-WAY DELAY</span>
+                  <strong id="checkins-uplink-timer" class="checkins-uplink-timer">00:00</strong>
+                </div>
+                <p id="checkins-uplink-status">Recording asynchronous video message for Earth family relay…</p>
+                <div class="checkins-uplink-controls">
+                  <button id="checkins-uplink-mic" class="eng-btn active" type="button">Mic: ON</button>
+                  <button id="checkins-uplink-cam" class="eng-btn active" type="button">Cam: ON</button>
+                  <button id="checkins-uplink-end" class="btn-glass-sec" type="button">End &amp; Queue Uplink</button>
+                </div>
+              </div>
+            </div>
             <div class="checkins-grid">
               <div class="sub-glass">
                 <h2>How are you today?</h2>
@@ -405,6 +451,7 @@
               <button id="csa-open-map-btn" class="btn-glass-sec" type="button">Open Body &amp; Radiation Map →</button>
               <button id="csa-open-heart-btn" class="mini-link-btn" type="button">Heart Lab →</button>
               <button id="csa-open-rad-btn" class="mini-link-btn" type="button">RadLab →</button>
+              <button id="csa-open-kits-btn" class="mini-link-btn" type="button">📍 Emergency Kit Locator →</button>
             </div>
           </div>
         </div>
@@ -882,6 +929,36 @@
               <div><span>Assigned event</span><strong id="pvt-event">No current event</strong><small id="pvt-event-time">—</small></div>
               <div><span>Prior 24h sleep</span><strong id="pvt-sleep">Unknown</strong><small id="pvt-sleep-detail">Complete current log required</small></div>
               <div><span>Personal baseline</span><strong id="pvt-baseline">Unavailable</strong><small id="pvt-baseline-detail">Same protocol · measured runs only</small></div>
+            </div>
+            <div id="pvt-correlation-card" class="pvt-correlation-card">
+              <div class="panel-head">
+                <div>
+                  <span class="zone-kicker">PRE-TASK PVT vs. PERSONAL BASELINE · SCHEDULE CORRELATION</span>
+                  <div id="pvt-corr-context" class="pvt-corr-context">Docking Window · Sleep 5h 09m</div>
+                </div>
+                <div class="eng-group">
+                  <span id="pvt-corr-pill" class="triage-pill pill-warning">+24.8% LATENCY</span>
+                  <button id="pvt-corr-demo-btn" class="mini-link-btn" type="button">Simulate Docking Alert</button>
+                </div>
+              </div>
+              <div class="pvt-corr-tiles">
+                <div class="simple-kpi-tile">
+                  <span id="pvt-corr-baseline-label" class="simple-kpi-label">Personal Baseline (12 runs)</span>
+                  <strong id="pvt-corr-baseline-val" class="simple-kpi-val">274 ms</strong>
+                </div>
+                <div class="simple-kpi-tile">
+                  <span id="pvt-corr-current-label" class="simple-kpi-label">Current Pre-Docking PVT</span>
+                  <strong id="pvt-corr-current-val" class="simple-kpi-val">342 ms (+68 ms, 4 lapses)</strong>
+                </div>
+                <div class="simple-kpi-tile">
+                  <span id="pvt-corr-rec-label" class="simple-kpi-label">Schedule Recommendation</span>
+                  <strong id="pvt-corr-rec-val" class="simple-kpi-val">Defer Docking · 90m Recovery</strong>
+                </div>
+              </div>
+              <div class="pvt-latency-bar-wrap">
+                <div class="pvt-latency-track"><div id="pvt-corr-bar-fill" class="pvt-latency-fill" style="width: 62%;"></div></div>
+                <span id="pvt-corr-bar-label" class="pvt-latency-label">+24.8% LATENCY vs. BASELINE</span>
+              </div>
             </div>
             <div class="pvt-actions">
               <button id="pvt-start" class="btn-glass-pri" type="button" disabled>Start three-minute check</button>
@@ -1385,6 +1462,22 @@
               <div id="medhub-pathways-compact" class="shelter-mini-bars"></div>
               <div id="medhub-causal-box" class="alara-note">Select a pathway above to see which silo biomarkers combine and the scientific basis.</div>
             </div>
+          </div>
+
+          <div id="medhub-kit-locator" class="sub-glass kit-locator-panel" aria-label="Emergency On-Board Device and Kit Locator">
+            <div class="panel-head">
+              <div>
+                <span class="zone-kicker">EMERGENCY ON-BOARD DEVICE &amp; KIT LOCATOR</span>
+                <h2 class="panel-title">Medical Bay &amp; LED Beacon Guidance</h2>
+              </div>
+              <div class="eng-group">
+                <span id="kit-locator-pill" class="triage-pill pill-warning">BAY 02 · ACTIVE BEACON</span>
+                <button id="kit-beacon-toggle-btn" class="btn-glass-sec" type="button">Toggle LED Beacon</button>
+                <button id="kit-confirm-pulled-btn" class="btn-glass-pri" type="button">Confirm Kit Pulled</button>
+              </div>
+            </div>
+            <div id="kit-bay-grid" class="kit-bay-grid"></div>
+            <div id="kit-locator-status" class="alara-note" role="status">Select any medical bay to pulse its rack LED beacon or confirm kit retrieval.</div>
           </div>
         </div>
 
