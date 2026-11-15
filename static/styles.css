@@ -1167,8 +1167,8 @@ body.theme-night .dot-sm { border-color: #18232e; }
 
 .gc-avatar-wrap {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 120px;
+  height: 120px;
   flex-shrink: 0;
 }
 
@@ -2410,7 +2410,7 @@ th { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); te
   #rs-shelter-guide .sbar-track { grid-column: 1 / -1; order: 3; }
   .crew-glance-grid { grid-template-columns: 1fr; gap: 10px; }
   .glance-card { padding: 13px; gap: 8px; }
-  .gc-avatar-wrap { width: 68px; height: 68px; }
+  .gc-avatar-wrap { width: 88px; height: 88px; }
   .astronaut-wrap { height: 270px; }
   .zone-float-popup { display: none; }
   .mobile-float-bar { display: flex; }
