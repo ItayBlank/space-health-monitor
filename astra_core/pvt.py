@@ -5,13 +5,14 @@ import json, os, secrets, threading
 from pathlib import Path
 from typing import Any
 from hal2030.config import CREW_BY_ID
+from hal2030.paths import runtime_root
 
 PROTOCOL_VERSION = "pvt-b-180s-v1"
 DURATION_SECONDS = 180
 LAPSE_THRESHOLD_MS = 500  # Illustrative, not a clinical limit.
 UTC = timezone.utc
 _LOCK = threading.RLock()
-_PATH = Path(os.environ.get("ASTRA_PVT_STORE", Path(__file__).resolve().parents[1] / "runtime" / "pvt_records.json"))
+_PATH = Path(os.environ.get("ASTRA_PVT_STORE", runtime_root() / "pvt_records.json"))
 
 
 class PVTError(ValueError):
