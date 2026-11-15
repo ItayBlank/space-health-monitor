@@ -53,7 +53,7 @@ Open `http://127.0.0.1:8000` in Chrome, Edge, or Firefox.
 | **Heart (Cardiovascular)** | Individual 1 Hz vitals, activity-aware rules, synthetic ECG/PPG strips, and **PhysioNet BIDMC / PTT** dataset replay. |
 | **RadLab (Radiation)** | **ISS REM 2024 & DOSTEL** orbital dose-rate timeline, module shielding simulation, and Solar Particle Event (SPE) / GCR presets. |
 | **Sensors & SANS** | All 42 sensor channels with filters, [mission-aware three-minute PVT](docs/PVT.md) and a separate five-trial reaction demo, **SANS** optical/Amsler exam with voice readout, and Guided Near-Vision check. |
-| **Check-ins** | [Local sign-in, personal mood/stress history, illustrative trend follow-up, and consent-based consult requests](docs/PRIVATE_CHECKINS.md). |
+| **Check-ins** | [Local sign-in, personal mood/stress history, illustrative trend follow-up, and consent-based consult requests](docs/PRIVATE_CHECKINS.md). [Family Connection](docs/FAMILY_CONNECTION.md) offers private playback and simulated family updates. |
 | **Downlink (Mission Link)** | Durable local JSON snapshot queue (`runtime/downlink/`) with offline toggle and **Local · 3 s** / **Mars · 22 min** latency presets. |
 | **HAL2030 Companion** | Six isolated crew chat sessions with local **Kokoro-82M INT8** natural speech output, **Faster-Whisper tiny.en** microphone transcription, and IEC 60601-1-8 / NASA-STD-3001 gentle marimba chimes + anti-overload critical callouts (`Voice` / `Chime` / `Muted`). |
 

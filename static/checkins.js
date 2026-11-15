@@ -47,6 +47,7 @@
     $("checkins-share-open").disabled = true;
     $("checkins-login").reset();
     $("checkins-password").value = "";
+    document.dispatchEvent(new Event("astra-private-locked"));
   }
 
   function enterState(crewId) {
@@ -54,6 +55,7 @@
     lock.classList.add("hidden");
     panel.classList.remove("hidden");
     $("checkins-owner").textContent = crewId;
+    document.dispatchEvent(new Event("astra-private-entered"));
   }
 
   function make(tag, text, className = "") {
@@ -120,9 +122,16 @@
       const dismissButton = make("button", "Dismiss this follow-up", "btn-glass-sec");
       dismissButton.type = "button";
       dismissButton.addEventListener("click", dismissPrompt);
-      followup.append(shareButton, dismissButton);
+      followup.append(familyMessageButton("Watch a message from home"), shareButton, dismissButton);
     }
     renderDemos(data.demo_cases || []);
+  }
+
+  function familyMessageButton(label) {
+    const button = make("button", label, "btn-glass-sec");
+    button.type = "button";
+    button.addEventListener("click", () => document.dispatchEvent(new Event("astra-open-family-message")));
+    return button;
   }
 
   function renderDemos(cases) {
@@ -133,6 +142,7 @@
       card.className = "checkins-demo-case";
       card.append(make("strong", `${item.case === "isolated" ? "Isolated dip" : "Sustained change"}: ${item.trend.prompt ? "follow-up offered" : "no follow-up"}`));
       card.append(make("p", "Synthetic examples only. They do not alter your baseline, personal history, or consult requests."));
+      if (item.trend.prompt) card.append(familyMessageButton("Open sample message"));
       area.append(card);
     });
   }
@@ -185,6 +195,9 @@
     if (generation !== sessionGeneration || panel.classList.contains("hidden")) return;
     render(data);
   }
+
+  document.addEventListener("astra-private-expired", lockState);
+  window.addEventListener("pagehide", lockState);
 
   document.addEventListener("astra-level-change", (event) => {
     if (event.detail?.level !== "checkins" && !panel.classList.contains("hidden")) {

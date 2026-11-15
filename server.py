@@ -33,6 +33,7 @@ from astra_core.standards import (
 )
 from astra_core.vitals import PHYSIONET_RECORDS, analyze_vitals_stream
 from astra_core.checkins import router as private_checkins_router
+from astra_core.family_connection import router as family_connection_router
 from hal2030.paths import resource_root
 
 STATIC_DIR = resource_root() / "static"
@@ -81,16 +82,19 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 app.include_router(private_checkins_router)
+app.include_router(family_connection_router)
 
 
 @app.middleware("http")
 async def private_response_headers(request, call_next):
     """Prevent browser, proxy, or shared-cache storage of private API responses."""
     response = await call_next(request)
-    if request.url.path.startswith("/api/private/"):
+    path = request.url.path
+    family_recipient = path == "/api/family" or path.startswith("/api/family/")
+    if path.startswith("/api/private/") or family_recipient:
         response.headers["Cache-Control"] = "no-store, private"
         response.headers["Pragma"] = "no-cache"
-        response.headers["Vary"] = "Cookie"
+        response.headers["Vary"] = "Authorization" if family_recipient else "Cookie"
     return response
 
 
