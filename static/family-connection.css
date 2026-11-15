@@ -1,0 +1,37 @@
+.family-connection { margin-top: 16px; padding: 18px 20px; }
+.family-connection summary { cursor: pointer; font: 650 1.15rem Outfit, system-ui, sans-serif; }
+.family-content { display: grid; gap: 16px; margin-top: 16px; }
+.family-block { display: grid; gap: 8px; padding-top: 12px; border-top: 1px solid rgba(120,140,170,.3); }
+.family-block h2, .family-block h3, .family-block p { margin: 0; }
+.family-playback video { display: block; width: min(100%, 480px); margin: 8px 0 12px; border-radius: 10px; background: #101b29; }
+.family-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin: 6px 0; }
+.family-code { display: grid; gap: 6px; margin: 8px 0; }
+.family-code input, .family-portal input, .family-portal textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #6b8297;
+  background: transparent;
+  color: inherit;
+  border-radius: 8px;
+  font: inherit;
+}
+.family-fields { display: flex; flex-wrap: wrap; gap: 12px; margin: 0; padding: 8px; border: 1px solid rgba(120,140,170,.4); border-radius: 8px; }
+.family-fields label { display: inline-flex; align-items: center; gap: 6px; }
+.family-preview { padding: 10px; border: 1px solid rgba(120,140,170,.4); border-radius: 8px; }
+.family-records { display: grid; gap: 8px; list-style: none; margin: 0 0 8px; padding: 0; }
+.family-records li { padding: 8px 0; border-bottom: 1px solid rgba(120,140,170,.3); overflow-wrap: anywhere; }
+.family-records time { display: block; font-size: .85rem; }
+.family-status { position: sticky; bottom: 0; margin: 0; }
+.family-status:not(:empty) { padding: 8px; color: #eff5f9; background: #1b3145; border-radius: 8px; }
+
+.family-portal { margin: 0; color: #eff5f9; background: #101b29; font: 1rem/1.5 system-ui, sans-serif; color-scheme: dark; }
+.family-portal main { width: min(680px, calc(100% - 32px)); margin: 36px auto; }
+.family-portal [hidden] { display: none; }
+.family-portal h1 { font-size: clamp(1.7rem, 5vw, 2.7rem); line-height: 1.1; }
+.family-portal a { color: #8de3cd; }
+.family-portal button { border: 1px solid #6b8297; border-radius: 8px; padding: 8px 14px; background: #22394f; color: inherit; font: inherit; cursor: pointer; }
+.family-portal button:disabled { opacity: .55; cursor: default; }
+.family-portal :focus-visible { outline: 3px solid #8de3cd; outline-offset: 2px; }
+.family-portal form { display: grid; gap: 12px; margin: 12px 0; }
+.family-portal label { display: grid; gap: 6px; }

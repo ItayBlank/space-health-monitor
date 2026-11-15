@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Family Connection · Family portal</title>
+  <link rel="stylesheet" href="/static/family-connection.css" />
+  <script src="/static/family-connection.js" defer></script>
+</head>
+<body class="family-portal">
+  <main id="family-recipient-portal">
+    <a href="/">← ASTRA-Core</a>
+    <h1>Family Connection</h1>
+    <p>Use the pairing code the crew member shared with you. Messages travel over the simulated Earth–Mars link.</p>
+    <form id="family-portal-gate">
+      <label>Family pairing code <input id="family-portal-code" required type="password" autocomplete="off" /></label>
+      <button type="submit">Connect to family portal</button>
+    </form>
+    <div id="family-portal-home" hidden>
+      <p>Connected as <strong id="family-portal-name"></strong></p>
+      <p id="family-portal-link"></p>
+      <div class="family-actions">
+        <button id="family-portal-refresh" type="button">Refresh</button>
+        <button id="family-portal-lock" type="button">Disconnect</button>
+      </div>
+      <h2>Updates from the crew member</h2>
+      <ul id="family-portal-reports" class="family-records"></ul>
+      <h2>Send a text reply</h2>
+      <form id="family-reply-form">
+        <label>Message <textarea id="family-reply-text" rows="4" maxlength="1000" required></textarea></label>
+        <button type="submit">Queue text reply</button>
+      </form>
+      <h2>Reply history</h2>
+      <ul id="family-portal-replies" class="family-records"></ul>
+    </div>
+    <p id="family-portal-status" role="status"></p>
+  </main>
+</body>
+</html>

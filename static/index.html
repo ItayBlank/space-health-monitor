@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/styles.css" />
   <link rel="stylesheet" href="/static/checkins.css" />
+  <link rel="stylesheet" href="/static/family-connection.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/static/pvt.css" />
 </head>
@@ -318,6 +319,70 @@
               <button id="checkins-share-cancel" class="btn-glass-sec" type="button">Cancel</button>
               <p id="checkins-share-status" role="status"></p>
             </div>
+            <details class="sub-glass family-connection" id="family-connection">
+              <summary>Family Connection</summary>
+              <div class="family-content">
+                <div class="family-block">
+                  <h2>Messages from home</h2>
+                  <p>Preloaded messages are available here even when the mission link is down.</p>
+                  <button id="family-watch" class="btn-glass-sec" type="button">Open preloaded message</button>
+                  <div id="family-playback" class="family-playback hidden">
+                    <p>Sample message · Acted footage from <a href="/static/family-message.html">the family-message demo</a>.</p>
+                    <video id="family-video" controls playsinline preload="none" aria-label="Sample preloaded family message"></video>
+                    <button id="family-video-close" class="btn-glass-sec" type="button">Close message</button>
+                  </div>
+                </div>
+                <div class="family-block">
+                  <h2>Updates to family</h2>
+                  <form id="family-enable-form" class="checkins-form">
+                    <p>Approve a recipient for this local simulation. You choose what to send and confirm each update.</p>
+                    <label>Approved recipient <input id="family-recipient-name" required maxlength="120" autocomplete="off" /></label>
+                    <button class="btn-glass-pri" type="submit">Enable family sharing</button>
+                  </form>
+                  <div id="family-sharing" class="hidden">
+                    <p>Approved recipient <strong id="family-approved-recipient"></strong></p>
+                    <div id="family-code-panel" class="family-code hidden">
+                      <label for="family-pairing-code">Family pairing code</label>
+                      <input id="family-pairing-code" type="text" readonly autocomplete="off" spellcheck="false" />
+                      <small>Copy this code before closing. It grants the recipient access to the family portal.</small>
+                    </div>
+                    <div class="family-actions">
+                      <a href="/static/family-connection-recipient.html" target="_blank" rel="noopener noreferrer">Open family portal</a>
+                      <button id="family-revoke" class="btn-glass-sec" type="button">Stop sharing</button>
+                    </div>
+                    <form id="family-preview-form" class="checkins-form">
+                      <fieldset class="family-fields">
+                        <legend>Choose fields for this update</legend>
+                        <label><input id="family-field-mood" type="checkbox" name="field" value="mood" /> Latest mood rating</label>
+                        <label><input id="family-field-sleep" type="checkbox" name="field" value="sleep" /> Logged sleep duration</label>
+                      </fieldset>
+                      <button class="btn-glass-sec" type="submit">Preview update</button>
+                    </form>
+                    <div id="family-preview" class="family-preview hidden">
+                      <p>Review the information the recipient will receive.</p>
+                      <ul id="family-preview-values"></ul>
+                      <div class="family-actions">
+                        <button id="family-approve" class="btn-glass-pri" type="button">Approve and queue update</button>
+                        <button id="family-discard" class="btn-glass-sec" type="button">Discard preview</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="family-block">
+                  <h2>Mission link</h2>
+                  <p id="family-link-status"></p>
+                  <div class="family-actions">
+                    <button id="family-refresh" class="btn-glass-sec" type="button">Refresh</button>
+                    <button id="family-advance" class="btn-glass-sec" type="button" disabled>Advance simulated link</button>
+                  </div>
+                  <h3>Update history</h3>
+                  <ul id="family-reports" class="family-records"></ul>
+                  <h3>Private inbox</h3>
+                  <ul id="family-inbox" class="family-records"></ul>
+                </div>
+                <p id="family-status" class="family-status" role="status"></p>
+              </div>
+            </details>
             <small class="checkins-disclaimer">The three-check-in rule is illustrative and supportive only. It is not a diagnosis or fitness-for-duty decision. Missed check-ins are not treated as reassuring observations.</small>
           </div>
         </div>
@@ -1207,6 +1272,7 @@
 
   <audio id="voice-audio-player" class="hidden"></audio>
   <script src="/static/app.js"></script>
+  <script src="/static/family-connection.js"></script>
   <script src="/static/checkins.js"></script>
 </body>
 </html>
