@@ -9,7 +9,12 @@
   };
   const date = (value) => value ? new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }) + " UTC" : "—";
   const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const showError = (error) => { $("pvt-reason").textContent = error.message; $("pvt-status-pill").textContent = "UNAVAILABLE"; $("pvt-start").disabled = true; };
+  const showError = (error) => {
+    $("pvt-reason").textContent = error.message;
+    $("pvt-status-pill").className = "triage-pill pill-critical";
+    $("pvt-status-pill").textContent = "UNAVAILABLE";
+    $("pvt-start").disabled = true;
+  };
 
   async function loadCrew() {
     const result = await api("/api/pvt/crew");
@@ -27,7 +32,9 @@
       state.status = data;
       const demo = Boolean(state.scenario);
       $("pvt-demo-banner").classList.toggle("hidden", !demo);
-      $("pvt-status-pill").textContent = demo ? "SYNTHETIC" : data.recommend ? "RECOMMENDED" : data.sleep.status === "unknown" ? "SLEEP UNKNOWN" : "NOT INDICATED";
+      const pill = $("pvt-status-pill");
+      pill.textContent = demo ? "SYNTHETIC" : data.recommend ? "RECOMMENDED" : data.sleep.status === "unknown" ? "SLEEP UNKNOWN" : "NOT INDICATED";
+      pill.className = `triage-pill ${!demo && !data.recommend && data.sleep.status !== "unknown" ? "pill-nominal" : "pill-warning"}`;
       $("pvt-reason").textContent = data.reason;
       $("pvt-event").textContent = data.event ? data.event.title : "No upcoming assigned critical event";
       $("pvt-event-time").textContent = data.event ? date(data.event.event_utc) : "Two-hour window is checked against UTC";
@@ -120,6 +127,7 @@
         setControlsBusy(false);
         $("pvt-result").classList.remove("hidden");
         $("pvt-result").textContent = `Measured result · median ${result.median_rt_ms} ms · ${result.lapses} lapses across ${result.trial_count} stimuli. Lapse threshold is illustrative.`;
+        document.dispatchEvent(new CustomEvent("astra-pvt-complete", { detail: { crewId: state.crew, medianRtMs: result.median_rt_ms } }));
         refresh();
       })
       .catch((error) => abort(error.message));

@@ -2537,9 +2537,13 @@ th { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); te
 /* SENSORS & STARTER CHECKS */
 .starter-checks-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 14px;
+}
+
+.starter-checks-grid .pvt-panel {
+  margin: 0;
 }
 
 .check-card {

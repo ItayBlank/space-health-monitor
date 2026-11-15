@@ -3026,11 +3026,12 @@ function renderSensorsView() {
     (r) => (cf === "all" || r.crew_id === cf) && (sf === "all" || r.state === sf)
   );
 
-  $("sensor-matrix-tbody").innerHTML = filtered
-    .map((r) => {
-      const badgeCls = r.state === "critical" ? "pill-critical" : r.state === "warning" ? "pill-warning" : "pill-nominal";
-      const badgeTxt = r.link_state !== "online" ? "NO SIGNAL" : r.state === "critical" ? "CRITICAL" : r.state === "warning" ? "ATTENTION" : "ONLINE";
-      return `
+  $("sensor-matrix-tbody").innerHTML = filtered.length
+    ? filtered
+        .map((r) => {
+          const badgeCls = r.state === "critical" ? "pill-critical" : r.state === "warning" ? "pill-warning" : "pill-nominal";
+          const badgeTxt = r.link_state !== "online" ? "NO SIGNAL" : r.state === "critical" ? "CRITICAL" : r.state === "warning" ? "ATTENTION" : "ONLINE";
+          return `
         <tr class="sensor-row-click" data-crew="${r.crew_id}">
           <td><strong>${r.crew_name}</strong></td>
           <td>${r.sensor_name}</td>
@@ -3040,8 +3041,9 @@ function renderSensorsView() {
           <td class="mono-num">${r.quality_pct != null ? `${r.quality_pct}%` : "—"}</td>
           <td class="mono-num">${r.battery_pct != null ? `${Math.round(r.battery_pct)}%` : "—"}</td>
         </tr>`;
-    })
-    .join("");
+        })
+        .join("")
+    : `<tr><td colspan="7" class="sub-hint">No sensor channels match the current filter.</td></tr>`;
 
   $("sensor-matrix-tbody").querySelectorAll(".sensor-row-click").forEach((tr) => {
     tr.addEventListener("click", () => {
@@ -3054,15 +3056,21 @@ function renderSensorsView() {
 
   // Update Cabin CO2 & Hatch Trace Chart + live readouts
   const activeSample = frame.samples?.[state.activeCrewId];
-  $("sensor-co2-now").textContent = activeSample?.cabin_co2 != null ? `${Math.round(activeSample.cabin_co2)} ppm` : "-- ppm";
-  $("sensor-temp-now").textContent = activeSample?.cabin_temp != null ? `${activeSample.cabin_temp.toFixed(1)} °C` : "-- °C";
-
   const hist = frame.cabin_co2_history || { t: [], values: [] };
   const boosted = hist.values.map((v, idx) =>
     state.cabinAirAlert && idx >= hist.values.length - 12
       ? Math.round((v || 950) + (idx - (hist.values.length - 12)) * 95)
       : v
   );
+  const liveCo2 = state.cabinAirAlert && boosted.length
+    ? boosted[boosted.length - 1]
+    : activeSample?.cabin_co2;
+  $("sensor-co2-now").textContent = liveCo2 != null ? `${Math.round(liveCo2)} ppm` : "-- ppm";
+  $("sensor-temp-now").textContent = activeSample?.cabin_temp != null ? `${activeSample.cabin_temp.toFixed(1)} °C` : "-- °C";
+  if ($("co2-hatch-toggle-btn")) {
+    $("co2-hatch-toggle-btn").textContent = state.cabinAirAlert ? "Clear Hatch Spike" : "Simulate Hatch Spike";
+    $("co2-hatch-toggle-btn").classList.toggle("active", state.cabinAirAlert);
+  }
   if ($("co2HatchChart") && typeof Chart !== "undefined") {
     const tc = chartThemeColors();
     if (state.charts.co2Hatch) state.charts.co2Hatch.destroy();
@@ -3096,60 +3104,6 @@ function renderSensorsView() {
   }
 
   drawCalibratedVisionSetup();
-}
-
-function handlePvtClick() {
-  const btn = $("pvt-stim-btn");
-  const lbl = $("pvt-stim-label");
-  const sub = $("pvt-stim-sub");
-  const pill = $("pvt-status-pill");
-
-  if (state.pvt.phase === "idle" || state.pvt.phase === "done") {
-    state.pvt.trials = [];
-    state.pvt.phase = "wait";
-    btn.className = "pvt-stim-btn pvt-wait";
-    lbl.textContent = "WAIT FOR EMERALD FLASH...";
-    sub.textContent = "Trial 1 of 5";
-    pill.className = "triage-pill pill-warning";
-    pill.textContent = "RUNNING";
-    state.pvt.timeoutId = setTimeout(() => {
-      state.pvt.phase = "go";
-      state.pvt.startTs = performance.now();
-      btn.className = "pvt-stim-btn pvt-go";
-      lbl.textContent = "TAP NOW!";
-      sub.textContent = `Trial ${state.pvt.trials.length + 1} of 5`;
-    }, 1100 + Math.random() * 1100);
-  } else if (state.pvt.phase === "wait") {
-    sub.textContent = "Too early — wait for emerald flash!";
-  } else if (state.pvt.phase === "go") {
-    const rt = Math.round(performance.now() - state.pvt.startTs);
-    state.pvt.trials.push(rt);
-    const mean = Math.round(state.pvt.trials.reduce((a, b) => a + b, 0) / state.pvt.trials.length);
-    $("pvt-mean-ms").textContent = `${mean} ms`;
-    $("pvt-trial-count").textContent = `${state.pvt.trials.length} / 5`;
-
-    if (state.pvt.trials.length >= 5) {
-      state.pvt.phase = "done";
-      state.pvt.lastMeanMs = mean;
-      btn.className = "pvt-stim-btn pvt-idle";
-      lbl.textContent = `COMPLETE · ${mean} MS (TAP TO RE-RUN)`;
-      sub.textContent = mean >= 330 ? "Reaction slowed — rest advised" : "Nominal cognitive readiness";
-      pill.className = `triage-pill ${mean >= 330 ? "pill-warning" : "pill-nominal"}`;
-      pill.textContent = mean >= 330 ? "SLOWED" : "NOMINAL";
-      simulateCrewMember(state.activeCrewId).then(() => renderAll());
-    } else {
-      state.pvt.phase = "wait";
-      btn.className = "pvt-stim-btn pvt-wait";
-      lbl.textContent = `LAST: ${rt} MS · WAIT...`;
-      sub.textContent = `Trial ${state.pvt.trials.length + 1} of 5`;
-      state.pvt.timeoutId = setTimeout(() => {
-        state.pvt.phase = "go";
-        state.pvt.startTs = performance.now();
-        btn.className = "pvt-stim-btn pvt-go";
-        lbl.textContent = "TAP NOW!";
-      }, 1000 + Math.random() * 1000);
-    }
-  }
 }
 
 async function fetchDownlinkState() {
@@ -3231,6 +3185,7 @@ function setSensorsMode(mode) {
   $("sensors-mode-depth")?.classList.toggle("active", depth);
   $("sensors-toolbar-row")?.classList.toggle("hidden", !depth);
   $("sensor-matrix-card")?.classList.toggle("hidden", !depth);
+  if (state.level === "sensors") renderSensorsView();
 }
 
 function setDownlinkMode(mode) {
@@ -3377,18 +3332,13 @@ function bindEvents() {
     state.sensorFilter.state = e.target.value;
     renderSensorsView();
   });
-  $("pvt-stim-btn")?.addEventListener("click", handlePvtClick);
-  $("pvt-reset-btn")?.addEventListener("click", () => {
-    if (state.pvt.timeoutId) clearTimeout(state.pvt.timeoutId);
-    state.pvt = { phase: "idle", trials: [], startTs: 0, timeoutId: null, lastMeanMs: null };
-    $("pvt-stim-btn").className = "pvt-stim-btn pvt-idle";
-    $("pvt-stim-label").textContent = "TAP TO START 5-TRIAL CHECK";
-    $("pvt-stim-sub").textContent = "Nominal baseline < 280 ms · Auto-logs to crew fatigue";
-    $("pvt-mean-ms").textContent = "-- ms";
-    $("pvt-trial-count").textContent = "0 / 5";
-    $("pvt-status-pill").className = "triage-pill pill-nominal";
-    $("pvt-status-pill").textContent = "READY";
-    simulateCrewMember(state.activeCrewId).then(() => renderAll());
+  document.addEventListener("astra-pvt-complete", (e) => {
+    const { crewId, medianRtMs } = e.detail || {};
+    if (!crewId || typeof medianRtMs !== "number") return;
+    if (crewId === state.activeCrewId) {
+      state.pvt.lastMeanMs = medianRtMs;
+    }
+    simulateCrewMember(crewId).then(() => renderAll());
   });
   $("sans-cal-x")?.addEventListener("input", (e) => {
     state.sans.pxPerMmX = Number(e.target.value || 4.0);
