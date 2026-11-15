@@ -312,7 +312,7 @@
     } catch (error) {
       $("checkins-password").value = "";
       if (generation !== sessionGeneration) return;
-      $("checkins-login-error").textContent = error.message === "Crew ID or password is incorrect" ? error.message : "Sign-in failed. Check your connection and try again.";
+      $("checkins-login-error").textContent = error?.message || "Sign-in failed. Check your connection and try again.";
     }
   });
   $("checkins-logout").addEventListener("click", async () => {
