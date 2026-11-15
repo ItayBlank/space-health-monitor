@@ -1,4 +1,5 @@
-assets/
+# Exclude desktop assets at the root. The web app serves static/assets/.
+/assets/
 tests/
 docs/
 hal2030/ui/

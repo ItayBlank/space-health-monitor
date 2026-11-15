@@ -43,6 +43,11 @@ py -3 -m venv .venv
 
 Open `http://127.0.0.1:8000` in Chrome, Edge, or Firefox.
 
+For a Vercel preview, connect the Git repository at its root and enable
+Vercel's system environment variables. The dashboard uses temporary storage
+for the downlink queue, PVT records, and check-ins. Use synthetic demo data
+because records can reset or differ across function instances.
+
 ---
 
 ## Web Console Views

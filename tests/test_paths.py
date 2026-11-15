@@ -12,6 +12,13 @@ def test_source_runtime_stays_repo_local(monkeypatch):
     assert paths.runtime_root() == Path(paths.__file__).resolve().parent.parent / "runtime"
 
 
+def test_vercel_downlink_uses_temporary_storage(monkeypatch, tmp_path):
+    monkeypatch.setenv("VERCEL", "1")
+    monkeypatch.setattr(paths, "gettempdir", lambda: str(tmp_path))
+    assert paths.resource_root() == Path(paths.__file__).resolve().parent.parent
+    assert DownlinkService().output_dir == tmp_path / "astra-core" / "downlink"
+
+
 def test_frozen_queue_survives_new_extraction_and_working_directory(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "user-data"))
