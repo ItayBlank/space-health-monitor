@@ -1,6 +1,6 @@
 # Family message demo
 
-Run `python -m uvicorn server:app --host 127.0.0.1 --port 8000` and open `http://127.0.0.1:8000`. Go to **HAL → Family Archive → Family message demo**. The page shows a 1.3-second take and a 4.4-second reel edited from three takes by the same CREMA-D actor. Each row includes the original recording, a low-bitrate encode, and the calibrated reconstruction.
+Run `python -m uvicorn server:app --host 127.0.0.1 --port 8000` and open `http://127.0.0.1:8000`. Go to **HAL → Family Archive → Family message demo**. The page opens with the 4.4-second Mars reconstruction. Expand **Compare the original and see what was sent** for the source video, low-bitrate encode, and payload download. **Try the shorter example** shows a 1.3-second take by the same CREMA-D actor.
 
 Each transmitted ZIP contains `message.json` (version, frame rate, frame count), `motion.npy` (76 float32 values per frame), and `audio.ogg` (mono Opus at a 24 kbps target). The browser plays previews. The offline CLI renders each ZIP using the same preloaded portrait, with speech and motion on one timeline.
 
