@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Family Message · ASTRA-Core</title>
+  <link rel="stylesheet" href="/static/family-message.css">
+</head>
+<body>
+  <main>
+    <a class="back" href="/">← ASTRA-Core</a>
+    <section class="hero" aria-labelledby="title">
+      <div class="intro">
+        <p class="link-label">Simulated Earth–Mars link</p>
+        <h1 id="title">Family video messages on Mars</h1>
+        <p>See and hear a loved one over a limited-bandwidth link. Send their voice and facial motion, then rebuild a full-frame video from a portrait already on board.</p>
+      </div>
+      <figure class="mars-player">
+        <figcaption>Mars playback <span>4.4 seconds · Original voice</span></figcaption>
+        <video src="/static/family-media/two-reconstruction.mp4" poster="/static/family-media/portrait.png" controls playsinline preload="metadata" aria-label="Full-frame reconstruction of the family message"></video>
+      </figure>
+      <div class="result">
+        <strong>32,950 bytes sent</strong>
+        <p>32.0% smaller than the 64 kbps video encode of this message.</p>
+      </div>
+    </section>
+
+    <details class="comparison">
+      <summary>Compare the original and see what was sent</summary>
+      <div class="details-content">
+        <div class="panels">
+          <figure>
+            <figcaption>Original recording</figcaption>
+            <video src="/static/family-media/two-reference.mp4" controls playsinline preload="none" aria-label="Three-take edited original recording"></video>
+            <p>309,577 bytes</p>
+          </figure>
+          <figure>
+            <figcaption>64 kbps video encode</figcaption>
+            <video src="/static/family-media/two-baseline.mp4" controls playsinline preload="none" aria-label="Three-take low-bitrate video"></video>
+            <p>48,437 bytes</p>
+          </figure>
+        </div>
+        <p><a href="/static/family-media/two.zip" download>Download the 32,950-byte message ZIP</a>.</p>
+        <p>The benchmark uses the same compressed audio, face crop, and frame rate in both encodings. The receiver animates the face over a static body and background. The <a href="/static/family-media/portrait.png" download>112,941-byte portrait</a> and 522 MB of model weights are preloaded once and counted separately. This demo plays a prepared 480 × 360 render.</p>
+      </div>
+    </details>
+
+    <details class="comparison">
+      <summary>Try the shorter example <span>1.3 seconds</span></summary>
+      <div class="details-content">
+        <div class="panels panels-three">
+          <figure>
+            <figcaption>Original recording</figcaption>
+            <video src="/static/family-media/one-reference.mp4" controls playsinline preload="none" aria-label="Single-take original recording"></video>
+            <p>102,603 bytes</p>
+          </figure>
+          <figure>
+            <figcaption>64 kbps video encode</figcaption>
+            <video src="/static/family-media/one-baseline.mp4" controls playsinline preload="none" aria-label="Single-take low-bitrate video"></video>
+            <p>14,089 bytes</p>
+          </figure>
+          <figure>
+            <figcaption>Mars playback</figcaption>
+            <video src="/static/family-media/one-reconstruction.mp4" controls playsinline preload="none" aria-label="Single-take calibrated reconstruction"></video>
+            <p><a href="/static/family-media/one.zip" download>Message ZIP</a> · 11,821 bytes · 16.1% smaller than the 64 kbps video</p>
+          </figure>
+        </div>
+      </div>
+    </details>
+    <footer>Demo footage and original audio are acted recordings from <a href="https://github.com/CheyneyComputerScience/CREMA-D">CREMA-D</a> by Cao et al., actor 1001. The dataset uses the <a href="https://opendatacommons.org/licenses/odbl/1-0/">Open Database License 1.0</a> and the recordings use the <a href="https://opendatacommons.org/licenses/dbcl/1-0/">Database Contents License 1.0</a>. The examples were edited and reconstructed.</footer>
+  </main>
+</body>
+</html>

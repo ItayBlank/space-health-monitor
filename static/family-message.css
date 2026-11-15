@@ -1,0 +1,55 @@
+:root {
+  color-scheme: dark;
+  font: 16px/1.55 system-ui, sans-serif;
+  color: #eff5f9;
+  background: #101b29;
+}
+
+body { margin: 0; }
+main { width: min(1080px, calc(100% - 48px)); margin: auto; padding: 28px 0 40px; }
+a { color: #8de3cd; }
+a:focus-visible, summary:focus-visible, video:focus-visible { outline: 3px solid #8de3cd; outline-offset: 4px; }
+.back { color: #b8cbdc; text-decoration: none; }
+.back:hover { text-decoration: underline; }
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, .87fr) minmax(0, 1.13fr);
+  grid-template-areas: "intro player" "result player";
+  column-gap: clamp(24px, 5vw, 64px);
+  row-gap: 28px;
+  align-items: center;
+  margin: clamp(26px, 6vw, 76px) 0 36px;
+}
+
+.intro { grid-area: intro; align-self: end; }
+.link-label { margin: 0 0 12px; color: #8de3cd; font-size: .875rem; font-weight: 650; }
+h1 { margin: 0; max-width: 12ch; font-size: clamp(2.4rem, 5vw, 4.4rem); line-height: 1.02; letter-spacing: -.045em; }
+.intro > p:last-child { margin: 18px 0 0; max-width: 42ch; color: #b8cbdc; }
+.mars-player { grid-area: player; }
+.mars-player figcaption { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+.mars-player span, summary span { color: #b8cbdc; font-size: .875rem; font-weight: 400; }
+.result { grid-area: result; align-self: start; border-left: 2px solid #8de3cd; padding-left: 14px; }
+.result strong { color: #8de3cd; font-size: 1.25rem; }
+.result p { margin: 2px 0 0; color: #b8cbdc; font-size: .9rem; }
+
+figure { min-width: 0; margin: 0; }
+figcaption { margin-bottom: 8px; font-weight: 650; }
+video { display: block; width: 100%; aspect-ratio: 4 / 3; background: #08111c; border-radius: 12px; }
+.comparison { border-top: 1px solid #394a5c; }
+.comparison:last-of-type { border-bottom: 1px solid #394a5c; }
+summary { padding: 14px 0; cursor: pointer; font-weight: 650; }
+summary span { margin-left: 10px; }
+.details-content { padding: 4px 0 16px; color: #c6d6e3; }
+.details-content figcaption { color: #eff5f9; }
+.details-content p { margin: 8px 0; }
+.panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.panels-three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+footer { margin-top: 22px; color: #b8cbdc; font-size: .8rem; }
+
+@media (max-width: 680px) {
+  main { width: calc(100% - 32px); padding-top: 20px; }
+  .hero { grid-template-columns: 1fr; grid-template-areas: "intro" "player" "result"; gap: 20px; margin-bottom: 28px; }
+  h1 { max-width: 16ch; }
+  .panels { grid-template-columns: 1fr; }
+}
