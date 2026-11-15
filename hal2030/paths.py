@@ -1,7 +1,8 @@
-"""Separate bundled resources from durable, per-user runtime files."""
+"""Separate bundled resources from writable runtime files."""
 import os
 from pathlib import Path
 import sys
+from tempfile import gettempdir
 
 
 def resource_root() -> Path:
@@ -14,9 +15,12 @@ def resource_root() -> Path:
 def runtime_root() -> Path:
     """Return the writable runtime location; callers create it or surface I/O errors.
 
-    Source runs keep repository-local runtime data. Frozen Windows builds use
-    LocalAppData so one-file extraction cleanup cannot erase the outbox.
+    Vercel uses temporary storage. Source runs keep repository-local runtime
+    data. Frozen Windows builds use LocalAppData so one-file extraction cleanup
+    cannot erase the outbox.
     """
+    if os.environ.get("VERCEL") == "1":
+        return Path(gettempdir()) / "astra-core"
     if not getattr(sys, "frozen", False):
         return Path(__file__).resolve().parent.parent / "runtime"
     local = os.environ.get("LOCALAPPDATA")

@@ -22,6 +22,8 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 
+from hal2030.paths import runtime_root
+
 router = APIRouter(prefix="/api/private", tags=["private check-ins"])
 COOKIE_NAME = "astra_private_session"
 SESSION_SECONDS = 8 * 60 * 60
@@ -34,10 +36,15 @@ def store_path() -> Path:
     import tempfile
 
     configured = os.environ.get("ASTRA_PRIVATE_DATA_DIR")
-    candidates = [Path(configured)] if configured else [
-        Path.home() / ".astra-core" / "private",
-        Path(tempfile.gettempdir()) / ".astra-core" / "private",
-    ]
+    if configured:
+        candidates = [Path(configured)]
+    elif os.environ.get("VERCEL") == "1":
+        candidates = [runtime_root() / "private"]
+    else:
+        candidates = [
+            Path.home() / ".astra-core" / "private",
+            Path(tempfile.gettempdir()) / ".astra-core" / "private",
+        ]
     for base in candidates:
         try:
             base.mkdir(parents=True, exist_ok=True)
