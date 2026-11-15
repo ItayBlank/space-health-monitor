@@ -26,9 +26,10 @@ py -3 -m venv .venv
 
 *(macOS / Linux: `python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt`)*
 
-3. **Download local CPU voice models (Kokoro-82M INT8 TTS + Faster-Whisper tiny.en STT):**
+3. **Optional. Install local voice dependencies and download the CPU voice models (Kokoro-82M INT8 TTS + Faster-Whisper tiny.en STT):**
 
 ```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-voice.txt
 .\.venv\Scripts\python.exe tools/download_voice_model.py --engine natural
 ```
 
@@ -152,7 +153,8 @@ This build has **no NASA network endpoint**. Receipt is simulated locally. **Exp
 space-health-monitor/
   server.py                     FastAPI web console entrypoint & APIs
   main.py                       Legacy PySide6 desktop prototype entrypoint
-  requirements.txt              Web, scientific, and desktop runtime dependencies
+  requirements.txt              Web runtime dependencies
+  requirements-desktop.txt      Desktop and local voice dependencies
   requirements-voice.txt        CPU voice dependencies (Kokoro-82M INT8 + Faster-Whisper)
   requirements-dev.txt          Optional test dependencies
   astra_core/

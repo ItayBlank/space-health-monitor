@@ -45,6 +45,9 @@ NASA OCHMO-STD-100.1A §6.6.2, in the [supplied Revision A PDF](https://ntrs.nas
 
 ## Synthetic demonstration
 
+**Try Message from Home demo** opens the bundled family-video example from the
+sign-in screen. The preview has no access to crew accounts or check-in records.
+
 After sign-in, use **Show synthetic examples**. This adds two clearly marked,
 separate eight-entry examples: five baseline observations plus three evaluated
 observations. The isolated dip does not offer a follow-up; the sustained mood

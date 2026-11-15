@@ -11,7 +11,7 @@ goto install
 python -m venv .venv
 if errorlevel 1 goto failed
 :install
-".venv\Scripts\python.exe" -m pip install -r requirements.txt
+".venv\Scripts\python.exe" -m pip install -r requirements-desktop.txt
 if errorlevel 1 goto failed
 goto launch
 :run

@@ -41,7 +41,46 @@
       $("pvt-event-form").querySelectorAll("input,button").forEach((el) => { el.disabled = demo; });
       $("pvt-start-note").textContent = demo ? "Scenario data is isolated and cannot start or suppress a measured run." : data.recommend ? "The event is in its two-hour window and sleep is under 6 hours." : "No measured check is currently recommended.";
       renderRecords(data.records || []);
+      renderCorrelation(data);
     } catch (error) { showError(error); }
+  }
+
+  function renderCorrelation(data, forceDemo = false) {
+    if (!$("pvt-correlation-card")) return;
+    const records = (data?.records || []).filter((r) => typeof r.median_rt_ms === "number");
+    const latest = records.length ? records[records.length - 1] : null;
+    const baselineReady = data?.personal_baseline?.status === "available" && typeof data.personal_baseline.median_rt_ms === "number";
+
+    const useLive = !forceDemo && baselineReady && latest;
+    const baseMs = useLive ? data.personal_baseline.median_rt_ms : 274;
+    const baseRuns = useLive ? (data.personal_baseline.sample_count || 3) : 12;
+    const currMs = useLive ? latest.median_rt_ms : 342;
+    const lapses = useLive ? (latest.lapses ?? 0) : 4;
+    const deltaMs = currMs - baseMs;
+    const pct = baseMs > 0 ? ((deltaMs / baseMs) * 100) : 0;
+    const pctStr = `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`;
+
+    const sleepText = (!forceDemo && data?.sleep?.status !== "unknown" && typeof data?.sleep?.total_minutes === "number")
+      ? `${Math.floor(data.sleep.total_minutes / 60)}h ${String(data.sleep.total_minutes % 60).padStart(2, "0")}m`
+      : "5h 09m";
+    const eventTitle = (!forceDemo && data?.event?.title) ? data.event.title : "Docking Window";
+
+    $("pvt-corr-context").textContent = `${eventTitle} · Sleep ${sleepText}`;
+    $("pvt-corr-baseline-label").textContent = `Personal Baseline (${baseRuns} runs)`;
+    $("pvt-corr-baseline-val").textContent = `${baseMs} ms`;
+    $("pvt-corr-current-label").textContent = `Current Pre-${eventTitle.split(" ")[0]} PVT`;
+    $("pvt-corr-current-val").textContent = `${currMs} ms (${deltaMs >= 0 ? "+" : ""}${deltaMs} ms, ${lapses} lapses)`;
+
+    const degraded = pct > 10 || lapses >= 3;
+    $("pvt-corr-rec-val").textContent = degraded ? "Defer Docking · 90m Recovery" : "Cleared for Task Window";
+    $("pvt-corr-pill").textContent = `${pctStr} LATENCY`;
+    $("pvt-corr-pill").className = `triage-pill ${degraded ? "pill-warning" : "pill-nominal"}`;
+    $("pvt-corr-bar-label").textContent = `${pctStr} LATENCY vs. BASELINE`;
+    const fill = $("pvt-corr-bar-fill");
+    if (fill) {
+      fill.style.width = `${Math.min(100, Math.max(10, Math.abs(pct) * 2.5))}%`;
+      fill.classList.toggle("is-nominal", !degraded);
+    }
   }
 
   function renderRecords(records) {
@@ -250,6 +289,7 @@
     $("pvt-sleep-form").addEventListener("submit", submitSleep);
     $("pvt-sleep-add").addEventListener("click", addSleepInterval);
     $("pvt-event-form").addEventListener("submit", submitEvent);
+    $("pvt-corr-demo-btn")?.addEventListener("click", () => renderCorrelation(state.status, true));
     document.addEventListener("keydown", (event) => {
       if (!state.session || state.phase === "finishing" || event.repeat || !["Space", "Enter"].includes(event.code)) return;
       event.preventDefault();

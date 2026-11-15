@@ -16,13 +16,14 @@ cabin-tracked astronaut dose against a naive vessel-average estimate.
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import Dict, List
 
 import numpy as np
-import pandas as pd
 
 from hal2030.paths import resource_root
 
@@ -115,42 +116,49 @@ DEFAULT_HOURLY_SCHEDULE: List[str] = (
 @lru_cache(maxsize=1)
 def load_rem_summary() -> Dict[str, dict]:
     """Load 23-day REM cabin statistics and shielding ratios vs Columbus & Vessel Avg."""
-    df = pd.read_csv(REM_CSV)
-    df["cabin_id"] = df["instrument_id"].map(INSTRUMENT_TO_CABIN)
-    df = df.dropna(subset=["cabin_id"]).copy()
+    by_cabin: Dict[str, List[float]] = {}
+    by_ts: Dict[str, Dict[str, float]] = {}
+    all_rates: List[float] = []
+    with REM_CSV.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            cid = INSTRUMENT_TO_CABIN.get(row["instrument_id"])
+            if not cid:
+                continue
+            rate = float(row["absorbed_dose_rate"])
+            by_cabin.setdefault(cid, []).append(rate)
+            by_ts.setdefault(row["timestamp"], {})[cid] = rate
+            all_rates.append(rate)
 
-    stats = df.groupby("cabin_id")["absorbed_dose_rate"].agg(["count", "mean", "min", "max"]).to_dict("index")
-    columbus_mean = stats["columbus"]["mean"]
-    vessel_mean = float(df["absorbed_dose_rate"].mean())
+    columbus_mean = float(np.mean(by_cabin["columbus"]))
+    vessel_mean = float(np.mean(all_rates))
 
     summary: Dict[str, dict] = {}
     for cid, meta in ISS_CABINS.items():
-        s = stats[cid]
+        vals = by_cabin[cid]
+        c_mean = float(np.mean(vals))
         summary[cid] = {
             "cabin_id": cid,
             "instrument_id": meta.instrument_id,
             "name": meta.name,
             "role": meta.role,
             "shielding_note": meta.shielding_note,
-            "days": int(s["count"]),
-            "rem_mean_ugy_h": round(float(s["mean"]), 2),
-            "rem_min_ugy_h": round(float(s["min"]), 2),
-            "rem_max_ugy_h": round(float(s["max"]), 2),
-            "ratio_vs_columbus": round(float(s["mean"] / columbus_mean), 4),
-            "ratio_vs_vessel_avg": round(float(s["mean"] / vessel_mean), 4),
+            "days": int(len(vals)),
+            "rem_mean_ugy_h": round(c_mean, 2),
+            "rem_min_ugy_h": round(float(np.min(vals)), 2),
+            "rem_max_ugy_h": round(float(np.max(vals)), 2),
+            "ratio_vs_columbus": round(c_mean / columbus_mean, 4),
+            "ratio_vs_vessel_avg": round(c_mean / vessel_mean, 4),
         }
 
-    # Include daily time series for charts
-    pivot = df.pivot(index="timestamp", columns="cabin_id", values="absorbed_dose_rate").sort_index()
     daily_series = [
-        {"date": str(ts)[:10], **{cid: round(float(row[cid]), 2) for cid in ISS_CABINS}}
-        for ts, row in pivot.iterrows()
+        {"date": ts[:10], **{cid: round(float(by_ts[ts][cid]), 2) for cid in ISS_CABINS if cid in by_ts[ts]}}
+        for ts in sorted(by_ts)
     ]
     return {"cabins": summary, "vessel_mean_ugy_h": round(vessel_mean, 2), "daily_series": daily_series}
 
 
 @lru_cache(maxsize=1)
-def load_orbital_bins() -> pd.DataFrame:
+def load_orbital_bins() -> List[Dict[str, float]]:
     """
     Build a time-weighted 24-hour orbital radiation profile (in Columbus) from DosTel1.
 
@@ -158,47 +166,56 @@ def load_orbital_bins() -> pd.DataFrame:
     to ~20s cadence inside the SAA. Integrating by actual dt prevents 5x SAA bias
     and yields ~0.210 mGy/day (0.455 mSv/day), matching published ISS baselines.
     """
-    orb = pd.read_csv(ORBITAL_CSV)
-    d1 = orb[orb["instrument_id"] == "DosTel1"].copy()
-    d1["timestamp"] = pd.to_datetime(d1["timestamp"])
-    d1 = d1.sort_values("timestamp").reset_index(drop=True)
+    rows: List[tuple] = []
+    with ORBITAL_CSV.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if row.get("instrument_id") != "DosTel1":
+                continue
+            ts = datetime.fromisoformat(row["timestamp"].replace("Z", "+00:00"))
+            lat = float(row["latitude"])
+            lon = float(row["longitude"])
+            rate = float(row["absorbed_dose_rate"])
+            rows.append((ts, lat, lon, rate))
+    rows.sort(key=lambda r: r[0])
 
-    dt_s = d1["timestamp"].diff().dt.total_seconds().fillna(100.0).clip(lower=1.0, upper=300.0)
-    d1["dt_h"] = dt_s / 3600.0
+    n = len(rows)
+    dt_h = np.empty(n, dtype=float)
+    rates = np.empty(n, dtype=float)
+    in_saa = np.zeros(n, dtype=bool)
+    hours = np.empty(n, dtype=int)
+    for i, (ts, lat, lon, rate) in enumerate(rows):
+        if i == 0:
+            dt_s = 100.0
+        else:
+            dt_s = max(1.0, min(300.0, (ts - rows[i - 1][0]).total_seconds()))
+        dt_h[i] = dt_s / 3600.0
+        rates[i] = rate
+        in_saa[i] = (-55.0 <= lat <= 5.0) and (-95.0 <= lon <= 45.0) and (rate > 20.0)
+        hours[i] = ts.hour
 
-    # Classify South Atlantic Anomaly (SAA) trapped-proton passes
-    in_saa = (
-        d1["latitude"].between(-55.0, 5.0)
-        & d1["longitude"].between(-95.0, 45.0)
-        & (d1["absorbed_dose_rate"] > 20.0)
-    )
-    gcr_baseline_mean = float(d1.loc[~in_saa, "absorbed_dose_rate"].mean())
-
+    gcr_baseline_mean = float(np.mean(rates[~in_saa]))
     q_gcr = NASA_RADIATION_STANDARDS["quality_factor_gcr"]
     q_saa = NASA_RADIATION_STANDARDS["quality_factor_saa"]
+    gcr_part = np.where(in_saa, gcr_baseline_mean, rates)
+    saa_excess = np.clip(rates - gcr_part, 0.0, None)
+    eq_rate = gcr_part * q_gcr + saa_excess * q_saa
 
-    gcr_part = np.where(in_saa, gcr_baseline_mean, d1["absorbed_dose_rate"])
-    saa_excess = np.clip(d1["absorbed_dose_rate"] - gcr_part, 0.0, None)
-
-    d1["in_saa"] = in_saa
-    d1["eq_rate_usv_h"] = gcr_part * q_gcr + saa_excess * q_saa
-
-    # Group into 24 one-hour bins across the 48h window (average day of 24 hours)
-    d1["hour"] = d1["timestamp"].dt.hour
-    d1["abs_dose_ugy"] = d1["absorbed_dose_rate"] * d1["dt_h"]
-    d1["eq_dose_usv"] = d1["eq_rate_usv_h"] * d1["dt_h"]
-
-    hourly = d1.groupby("hour").agg(
-        total_h=("dt_h", "sum"),
-        abs_dose_ugy=("abs_dose_ugy", "sum"),
-        eq_dose_usv=("eq_dose_usv", "sum"),
-        saa_fraction=("in_saa", "mean"),
-        peak_ugy_h=("absorbed_dose_rate", "max"),
-    ).reset_index()
-
-    hourly["columbus_abs_ugy_h"] = hourly["abs_dose_ugy"] / hourly["total_h"]
-    hourly["columbus_eq_usv_h"] = hourly["eq_dose_usv"] / hourly["total_h"]
-    return hourly[["hour", "columbus_abs_ugy_h", "columbus_eq_usv_h", "saa_fraction", "peak_ugy_h"]]
+    abs_dose = rates * dt_h
+    eq_dose = eq_rate * dt_h
+    out: List[Dict[str, float]] = []
+    for hr in sorted(set(int(h) for h in hours)):
+        mask = hours == hr
+        tot_h = float(np.sum(dt_h[mask]))
+        out.append(
+            {
+                "hour": float(hr),
+                "columbus_abs_ugy_h": float(np.sum(abs_dose[mask])) / tot_h,
+                "columbus_eq_usv_h": float(np.sum(eq_dose[mask])) / tot_h,
+                "saa_fraction": float(np.mean(in_saa[mask])),
+                "peak_ugy_h": float(np.max(rates[mask])),
+            }
+        )
+    return out
 
 
 def _normalize_schedule(
@@ -272,7 +289,7 @@ def simulate_astronaut_radiation(
     cum_cabin_ugy = 0.0
     cum_vessel_ugy = 0.0
 
-    for _, row in orbital.iterrows():
+    for row in orbital:
         hr = int(row["hour"])
         cid = schedule[hr]
         cabin_ratio = cabins_meta[cid]["ratio_vs_columbus"]
@@ -315,7 +332,7 @@ def simulate_astronaut_radiation(
 
     # Optimal ALARA comparison: spending work hours in Destiny (lowest REM ratio)
     best_ratio = min(c["ratio_vs_columbus"] for c in cabins_meta.values())
-    optimal_daily_msv = float(orbital["columbus_eq_usv_h"].sum()) / 1000.0 * best_ratio
+    optimal_daily_msv = sum(float(r["columbus_eq_usv_h"]) for r in orbital) / 1000.0 * best_ratio
     alara_savings_pct = max(0.0, ((daily_cabin_msv - optimal_daily_msv) / daily_cabin_msv) * 100.0) if not solar_storm_active else 0.0
 
     career_total_msv = prior_career_msv + mission_cabin_msv
@@ -424,7 +441,7 @@ def simulate_astronaut_radiation(
                     swapped_schedule[idx] = recommended_target
                     remaining -= 1
         preview_usv = 0.0
-        for _, row in orbital.iterrows():
+        for row in orbital:
             hr = int(row["hour"])
             cid = swapped_schedule[hr]
             c_ratio = cabins_meta[cid]["ratio_vs_columbus"]

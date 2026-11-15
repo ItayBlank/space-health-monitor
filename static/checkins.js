@@ -6,6 +6,11 @@
   let privateData = null;
   let sessionGeneration = 0;
   let previewIds = null;
+  let reconTimer = null;
+  let uplinkTimer = null;
+  let uplinkSeconds = 0;
+  let uplinkMicOn = true;
+  let uplinkCamOn = true;
   const escapeText = (value) => String(value ?? "");
 
   async function api(path, options = {}) {
@@ -47,10 +52,111 @@
     $("checkins-share-open").disabled = true;
     $("checkins-login").reset();
     $("checkins-password").value = "";
+    resetHomeSupport(true);
+  }
+
+  function stopHomeTimers() {
+    if (reconTimer) { window.clearInterval(reconTimer); reconTimer = null; }
+    if (uplinkTimer) { window.clearInterval(uplinkTimer); uplinkTimer = null; }
+  }
+
+  function resetHomeSupport(hideCard = false) {
+    stopHomeTimers();
+    const video = $("checkins-home-video");
+    if (video) { video.pause(); video.currentTime = 0; }
+    $("checkins-recon-box")?.classList.add("hidden");
+    $("checkins-mars-player")?.classList.add("hidden");
+    $("checkins-uplink-box")?.classList.add("hidden");
+    if (hideCard) $("checkins-home-card")?.classList.add("hidden");
+  }
+
+  function openHomeSupport(isLowMood = false) {
+    const card = $("checkins-home-card");
+    if (!card) return;
+    const isDemo = panel.classList.contains("hidden");
+    const badge = $("checkins-home-badge");
+    const title = $("checkins-home-title");
+    if (badge) {
+      badge.className = isLowMood ? "triage-pill pill-warning" : "triage-pill pill-nominal";
+      badge.textContent = isDemo ? "SYNTHETIC FAMILY UPLINK DEMO"
+        : isLowMood ? "LOW MOOD DETECTED · PRIVATE SUPPORT" : "FAMILY UPLINK · PRIVATE SUPPORT";
+    }
+    if (title) {
+      title.textContent = isLowMood
+        ? "Your mood has been lower lately. Watch a message from home?"
+        : "Message from Home & Family Uplink";
+    }
+    card.classList.remove("hidden");
+    if (isDemo) card.scrollIntoView({ block: "nearest" });
+  }
+
+  function startMessageReconstruction() {
+    resetHomeSupport(false);
+    const reconBox = $("checkins-recon-box");
+    const fill = $("checkins-recon-fill");
+    const pctEl = $("checkins-recon-pct");
+    const stageEl = $("checkins-recon-stage");
+    const player = $("checkins-mars-player");
+    const video = $("checkins-home-video");
+    if (!reconBox || !fill || !pctEl || !stageEl || !player) return;
+
+    reconBox.classList.remove("hidden");
+    let pct = 0;
+    fill.style.width = "0%";
+    pctEl.textContent = "0% · 89% LESS DATA";
+    stageEl.textContent = "Receiving 11% motion keyframes from Earth relay…";
+
+    reconTimer = window.setInterval(() => {
+      pct = Math.min(100, pct + 20);
+      fill.style.width = `${pct}%`;
+      pctEl.textContent = `${pct}% · 89% LESS DATA`;
+      if (pct === 40) stageEl.textContent = "Running Local Avatar + Motion Reconstruction…";
+      if (pct === 80) stageEl.textContent = "Synthesizing lip-sync & facial expression keyframes…";
+      if (pct >= 100) {
+        window.clearInterval(reconTimer);
+        reconTimer = null;
+        stageEl.textContent = "Local Avatar + Motion Reconstruction complete (89% less data)";
+        player.classList.remove("hidden");
+        if (video) {
+          video.currentTime = 0;
+          video.play().catch(() => {});
+        }
+      }
+    }, 240);
+  }
+
+  function formatDuration(sec) {
+    return `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+  }
+
+  function startCallHomeUplink() {
+    resetHomeSupport(false);
+    const box = $("checkins-uplink-box");
+    const timerEl = $("checkins-uplink-timer");
+    const statusEl = $("checkins-uplink-status");
+    const pillEl = $("checkins-uplink-pill");
+    if (!box || !timerEl || !statusEl || !pillEl) return;
+
+    uplinkSeconds = 0;
+    uplinkMicOn = true;
+    uplinkCamOn = true;
+    if ($("checkins-uplink-mic")) { $("checkins-uplink-mic").textContent = "Mic: ON"; $("checkins-uplink-mic").classList.add("active"); }
+    if ($("checkins-uplink-cam")) { $("checkins-uplink-cam").textContent = "Cam: ON"; $("checkins-uplink-cam").classList.add("active"); }
+    pillEl.className = "triage-pill pill-nominal";
+    pillEl.textContent = "OPTICAL UPLINK · 21m 14s ONE-WAY DELAY";
+    timerEl.textContent = "00:00";
+    statusEl.textContent = "Recording asynchronous video message for Earth family relay…";
+    box.classList.remove("hidden");
+
+    uplinkTimer = window.setInterval(() => {
+      uplinkSeconds += 1;
+      timerEl.textContent = formatDuration(uplinkSeconds);
+    }, 1000);
   }
 
   function enterState(crewId) {
     sessionGeneration += 1;
+    resetHomeSupport(true);
     lock.classList.add("hidden");
     panel.classList.remove("hidden");
     $("checkins-owner").textContent = crewId;
@@ -187,10 +293,13 @@
   }
 
   document.addEventListener("astra-level-change", (event) => {
-    if (event.detail?.level !== "checkins" && !panel.classList.contains("hidden")) {
+    if (event.detail?.level === "checkins") return;
+    if (!panel.classList.contains("hidden")) {
       lockState();
       // Revoke the owner session when leaving the private page; UI locks immediately.
       api("logout", { method: "POST", body: "{}" }).catch(() => {});
+    } else {
+      resetHomeSupport(true);
     }
   });
   $("checkins-login").addEventListener("submit", async (event) => {
@@ -224,14 +333,38 @@
   $("checkins-entry-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const generation = sessionGeneration;
+    const submittedMood = Number($("checkin-mood").value);
     $("checkins-save-status").textContent = "Saving…";
     try {
-      await api("checkins", { method: "POST", body: JSON.stringify({ mood: Number($("checkin-mood").value), stress: Number($("checkin-stress").value), note: $("checkin-note").value }) });
+      await api("checkins", { method: "POST", body: JSON.stringify({ mood: submittedMood, stress: Number($("checkin-stress").value), note: $("checkin-note").value }) });
       if (generation !== sessionGeneration || panel.classList.contains("hidden")) return;
       $("checkin-note").value = "";
       $("checkins-save-status").textContent = "Saved privately.";
+      if (submittedMood <= 2) openHomeSupport(true);
       await refresh();
     } catch (error) { if (generation === sessionGeneration && !panel.classList.contains("hidden")) $("checkins-save-status").textContent = error.message; }
+  });
+  $("checkins-open-home-btn")?.addEventListener("click", () => openHomeSupport(false));
+  $("checkins-try-home-demo")?.addEventListener("click", () => openHomeSupport(false));
+  $("checkins-watch-home-btn")?.addEventListener("click", startMessageReconstruction);
+  $("checkins-call-home-btn")?.addEventListener("click", startCallHomeUplink);
+  $("checkins-home-dismiss-btn")?.addEventListener("click", () => resetHomeSupport(true));
+  $("checkins-uplink-mic")?.addEventListener("click", () => {
+    uplinkMicOn = !uplinkMicOn;
+    const btn = $("checkins-uplink-mic");
+    if (btn) { btn.textContent = `Mic: ${uplinkMicOn ? "ON" : "MUTED"}`; btn.classList.toggle("active", uplinkMicOn); }
+  });
+  $("checkins-uplink-cam")?.addEventListener("click", () => {
+    uplinkCamOn = !uplinkCamOn;
+    const btn = $("checkins-uplink-cam");
+    if (btn) { btn.textContent = `Cam: ${uplinkCamOn ? "ON" : "OFF"}`; btn.classList.toggle("active", uplinkCamOn); }
+  });
+  $("checkins-uplink-end")?.addEventListener("click", () => {
+    stopHomeTimers();
+    const statusEl = $("checkins-uplink-status");
+    const pillEl = $("checkins-uplink-pill");
+    if (pillEl) { pillEl.className = "triage-pill pill-warning"; pillEl.textContent = "QUEUED FOR EARTH RELAY"; }
+    if (statusEl) statusEl.textContent = `Queued ${formatDuration(uplinkSeconds)} compressed video message (89% bandwidth saved).`;
   });
   $("checkins-demo").addEventListener("click", async () => {
     const generation = sessionGeneration;
