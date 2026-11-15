@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="/static/checkins.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="/static/pvt.css" />
+  <link rel="stylesheet" href="/static/walkthrough.css" />
 </head>
 <body class="theme-day state-nominal glance-active">
   <!-- Scenic depth backdrop frosted through the VisionOS glass slate -->
@@ -118,6 +119,7 @@
             <span id="top-voice-label">Checking Voice…</span>
           </button>
           <button id="top-chime-btn" class="glass-chip chip-chime chime-on" type="button" title="IEC 60601-1-8 Gentle Marimba Chime + Anti-Overload Red/Air Voice Callouts (Click to stop speech or cycle Voice / Chime / Muted)">🔊 Alerts: Voice</button>
+          <button id="btn-judge-demo" class="glass-chip chip-judge" type="button" aria-pressed="false" title="Toggle Judge Demo Walkthrough">🎯 Judge Tour</button>
           <button id="btn-demo-sim" class="glass-chip chip-sim" type="button">▶ 24h Sim Demo</button>
           <button id="top-btn-atmo" class="glass-chip" type="button">Cabin Air: OK</button>
           <button id="top-btn-storm" class="glass-chip chip-storm" type="button">Storm: OFF</button>
@@ -1479,5 +1481,57 @@
   <script src="/static/face_cv.js"></script>
   <script src="/static/app.js"></script>
   <script src="/static/checkins.js"></script>
+  <script src="/static/walkthrough.js"></script>
+
+  <!-- STARTUP / REFRESH MODE SELECTOR (WALKTHROUGH VS FREE DEMO) -->
+  <div id="judge-welcome-modal" class="judge-welcome-modal" role="dialog" aria-modal="true" aria-labelledby="judge-welcome-title">
+    <div class="judge-welcome-card">
+      <div class="judge-welcome-kicker">ASTRA-CORE · HAL2030 · SPACE HEALTH MONITOR</div>
+      <h2 id="judge-welcome-title" class="judge-welcome-title">Choose Your Experience</h2>
+      <p class="judge-welcome-sub">Select a guided spotlight tour tailored for hackathon judges, or jump straight into the live mission console.</p>
+      <div class="judge-mode-grid">
+        <button id="judge-btn-walkthrough" class="judge-mode-choice primary" type="button">
+          <span class="judge-choice-badge">RECOMMENDED FOR JUDGES</span>
+          <span class="judge-choice-title">Guided Walkthrough</span>
+          <span class="judge-choice-desc">7-step spotlight tour highlighting one crew member, Station Readiness, Actions, Bio-Sense CV/Radar, Unified MedHub, and HAL2030.</span>
+          <span class="judge-choice-cta">Start Walkthrough →</span>
+        </button>
+        <button id="judge-btn-freedemo" class="judge-mode-choice" type="button">
+          <span class="judge-choice-badge">INTERACTIVE SANDBOX</span>
+          <span class="judge-choice-title">Free Live Demo</span>
+          <span class="judge-choice-desc">Explore all views, simulate solar storms or CO₂ spikes, run live CV/Radar demos, and inspect NASA OSDR biomarkers freely.</span>
+          <span class="judge-choice-cta">Enter Mission Console →</span>
+        </button>
+      </div>
+      <div class="judge-welcome-footer">
+        <span>Tip: Toggle <strong>🎯 Judge Tour</strong> in the top bar anytime to start or exit the walkthrough.</span>
+        <span>Press <code>Esc</code> to exit tour · <code>←</code> / <code>→</code> to step</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WALKME SPOTLIGHT BLUR OVERLAY + FLOATING POPOVER -->
+  <div id="wt-layer" class="wt-layer hidden" aria-live="polite">
+    <div id="wt-blur-top" class="wt-blur-pane"></div>
+    <div id="wt-blur-right" class="wt-blur-pane"></div>
+    <div id="wt-blur-bottom" class="wt-blur-pane"></div>
+    <div id="wt-blur-left" class="wt-blur-pane"></div>
+    <div id="wt-spotlight-ring" class="wt-spotlight-ring"></div>
+    <div id="wt-popover" class="wt-popover" role="dialog" aria-label="Feature Walkthrough">
+      <div class="wt-pop-head">
+        <span id="wt-step-kicker" class="wt-step-kicker">STEP 1 OF 7</span>
+        <button id="wt-close-btn" class="wt-close-btn" type="button">Exit Tour</button>
+      </div>
+      <h3 id="wt-pop-title" class="wt-pop-title">Feature Spotlight</h3>
+      <p id="wt-pop-body" class="wt-pop-body"></p>
+      <div class="wt-pop-foot">
+        <div id="wt-dots" class="wt-dots"></div>
+        <div class="wt-nav-btns">
+          <button id="wt-prev-btn" class="wt-btn-sec" type="button">← Back</button>
+          <button id="wt-next-btn" class="wt-btn-pri" type="button">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
