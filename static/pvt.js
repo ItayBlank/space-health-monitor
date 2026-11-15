@@ -43,10 +43,16 @@
       const baseline = data.personal_baseline;
       $("pvt-baseline").textContent = baseline.status === "available" ? `${baseline.median_rt_ms} ms · ${baseline.median_lapses} lapses` : baseline.status === "establishing" ? "Establishing" : "Unavailable";
       $("pvt-baseline-detail").textContent = baseline.status === "available" ? `Earlier measured runs · n=${baseline.sample_count}` : "At least 3 earlier measured runs required";
-      $("pvt-start").disabled = !data.recommend || demo;
+      $("pvt-start").disabled = !data.recommend && state.scenario !== "short-sleep";
       $("pvt-sleep-form").querySelectorAll("input,button").forEach((el) => { el.disabled = demo; });
       $("pvt-event-form").querySelectorAll("input,button").forEach((el) => { el.disabled = demo; });
-      $("pvt-start-note").textContent = demo ? "Scenario data is isolated and cannot start or suppress a measured run." : data.recommend ? "The event is in its two-hour window and sleep is under 6 hours." : "No measured check is currently recommended.";
+      $("pvt-start-note").textContent = demo
+        ? (state.scenario === "short-sleep"
+            ? "Synthetic demo ready — click Start to preview the visual signal without saving."
+            : "Scenario data is isolated and cannot start or suppress a measured run.")
+        : data.recommend
+          ? "The event is in its two-hour window and sleep is under 6 hours."
+          : "No measured check is currently recommended.";
       renderRecords(data.records || []);
     } catch (error) { showError(error); }
   }
@@ -67,7 +73,7 @@
   function setControlsBusy(busy) {
     ["pvt-crew", "pvt-scenario", "pvt-refresh"].forEach((id) => { if ($(id)) $(id).disabled = busy; });
     const demo = Boolean(state.scenario);
-    $("pvt-start").disabled = busy || demo || !state.status?.recommend;
+    $("pvt-start").disabled = busy || (!state.status?.recommend && state.scenario !== "short-sleep");
     $("pvt-sleep-form").querySelectorAll("input,button").forEach((el) => { el.disabled = busy || demo; });
     $("pvt-event-form").querySelectorAll("input,button").forEach((el) => { el.disabled = busy || demo; });
     document.querySelectorAll("#pvt-sleep-draft button").forEach((el) => { el.disabled = busy || demo; });
@@ -91,13 +97,16 @@
     if (!state.session) return;
     clearTimers();
     const id = state.session.session_id;
+    const isSynth = Boolean(state.session.synthetic);
     state.session = null;
     state.phase = "idle";
     $("pvt-run").classList.add("hidden");
     setControlsBusy(false);
     $("pvt-result").classList.remove("hidden");
     $("pvt-result").textContent = `Check invalidated: ${reason}. No result was recorded.`;
-    try { await api(`/api/pvt/sessions/${encodeURIComponent(id)}/abort`, { method: "POST" }); } catch (_) {}
+    if (!isSynth) {
+      try { await api(`/api/pvt/sessions/${encodeURIComponent(id)}/abort`, { method: "POST" }); } catch (_) {}
+    }
     await refresh();
   }
 
@@ -117,8 +126,21 @@
     $("pvt-stimulus").className = "pvt-stimulus";
     $("pvt-stimulus").textContent = "SAVING";
     $("pvt-run-message").textContent = "Three minutes complete. Saving the measured responses…";
-    const { session_id } = state.session;
+    const { session_id, synthetic } = state.session;
     const responses = state.responses;
+    if (synthetic) {
+      const valid = responses.filter((r) => typeof r === "number").sort((a, b) => a - b);
+      const med = valid.length ? valid[Math.floor(valid.length / 2)] : 0;
+      const lapses = valid.filter((r) => r >= 500).length;
+      state.session = null;
+      state.phase = "idle";
+      $("pvt-run").classList.add("hidden");
+      setControlsBusy(false);
+      $("pvt-result").classList.remove("hidden");
+      $("pvt-result").textContent = `Synthetic demo result · median ${med} ms · ${lapses} lapses across ${valid.length} responses (not saved to measured log).`;
+      refresh();
+      return;
+    }
     api(`/api/pvt/sessions/${encodeURIComponent(session_id)}/complete`, { method: "POST", body: JSON.stringify({ reaction_times_ms: responses }) })
       .then((result) => {
         state.session = null;
@@ -169,7 +191,14 @@
     setControlsBusy(true);
     $("pvt-result").classList.add("hidden");
     try {
-      const session = await api("/api/pvt/sessions/start", { method: "POST", body: JSON.stringify({ crew_id: state.crew }) });
+      const isSynth = state.scenario === "short-sleep";
+      const session = isSynth
+        ? {
+            session_id: `synth-${Date.now()}`,
+            synthetic: true,
+            stimulus_intervals_ms: Array.from({ length: 36 }, (_, i) => 2200 + ((i * 733) % 2600)),
+          }
+        : await api("/api/pvt/sessions/start", { method: "POST", body: JSON.stringify({ crew_id: state.crew }) });
       state.session = session;
       state.intervals = session.stimulus_intervals_ms;
       state.responses = Array(state.intervals.length).fill(null);
@@ -179,7 +208,9 @@
       $("pvt-run").classList.remove("hidden");
       $("pvt-stimulus").className = "pvt-stimulus";
       $("pvt-stimulus").textContent = "READY";
-      $("pvt-run-message").textContent = "Wait for the visual signal; respond with the button, Space, or Enter.";
+      $("pvt-run-message").textContent = isSynth
+        ? "Synthetic demo run: wait for the visual signal; respond with the button, Space, or Enter."
+        : "Wait for the visual signal; respond with the button, Space, or Enter.";
       scheduleStimuli();
     } catch (error) { setControlsBusy(false); showError(error); await refresh(); }
   }
@@ -246,8 +277,25 @@
     } catch (error) { showError(error); }
   }
 
+  function toLocalInputValue(dt) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  }
+
+  function prefillForms() {
+    const now = new Date();
+    const wake = new Date(now.getTime() - 2.5 * 3600 * 1000);
+    const bed = new Date(wake.getTime() - 4.7 * 3600 * 1000);
+    const ev = new Date(now.getTime() + 55 * 60 * 1000);
+    if ($("pvt-sleep-start") && !$("pvt-sleep-start").value) $("pvt-sleep-start").value = toLocalInputValue(bed);
+    if ($("pvt-sleep-end") && !$("pvt-sleep-end").value) $("pvt-sleep-end").value = toLocalInputValue(wake);
+    if ($("pvt-sleep-complete")) $("pvt-sleep-complete").checked = true;
+    if ($("pvt-event-input") && !$("pvt-event-input").value) $("pvt-event-input").value = toLocalInputValue(ev);
+  }
+
   function init() {
     if (!$("pvt-panel")) return;
+    prefillForms();
     loadCrew().then(refresh).catch(showError);
     $("pvt-crew").addEventListener("change", () => { state.sleepDraft = []; renderSleepDraft(); refresh(); });
     $("pvt-scenario").addEventListener("change", refresh);
