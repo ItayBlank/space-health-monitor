@@ -73,11 +73,13 @@
   function openHomeSupport(isLowMood = false) {
     const card = $("checkins-home-card");
     if (!card) return;
+    const isDemo = panel.classList.contains("hidden");
     const badge = $("checkins-home-badge");
     const title = $("checkins-home-title");
     if (badge) {
       badge.className = isLowMood ? "triage-pill pill-warning" : "triage-pill pill-nominal";
-      badge.textContent = isLowMood ? "LOW MOOD DETECTED · PRIVATE SUPPORT" : "FAMILY UPLINK · PRIVATE SUPPORT";
+      badge.textContent = isDemo ? "SYNTHETIC FAMILY UPLINK DEMO"
+        : isLowMood ? "LOW MOOD DETECTED · PRIVATE SUPPORT" : "FAMILY UPLINK · PRIVATE SUPPORT";
     }
     if (title) {
       title.textContent = isLowMood
@@ -85,6 +87,7 @@
         : "Message from Home & Family Uplink";
     }
     card.classList.remove("hidden");
+    if (isDemo) card.scrollIntoView({ block: "nearest" });
   }
 
   function startMessageReconstruction() {
@@ -153,6 +156,7 @@
 
   function enterState(crewId) {
     sessionGeneration += 1;
+    resetHomeSupport(true);
     lock.classList.add("hidden");
     panel.classList.remove("hidden");
     $("checkins-owner").textContent = crewId;
@@ -289,10 +293,13 @@
   }
 
   document.addEventListener("astra-level-change", (event) => {
-    if (event.detail?.level !== "checkins" && !panel.classList.contains("hidden")) {
+    if (event.detail?.level === "checkins") return;
+    if (!panel.classList.contains("hidden")) {
       lockState();
       // Revoke the owner session when leaving the private page; UI locks immediately.
       api("logout", { method: "POST", body: "{}" }).catch(() => {});
+    } else {
+      resetHomeSupport(true);
     }
   });
   $("checkins-login").addEventListener("submit", async (event) => {
@@ -338,6 +345,7 @@
     } catch (error) { if (generation === sessionGeneration && !panel.classList.contains("hidden")) $("checkins-save-status").textContent = error.message; }
   });
   $("checkins-open-home-btn")?.addEventListener("click", () => openHomeSupport(false));
+  $("checkins-try-home-demo")?.addEventListener("click", () => openHomeSupport(false));
   $("checkins-watch-home-btn")?.addEventListener("click", startMessageReconstruction);
   $("checkins-call-home-btn")?.addEventListener("click", startCallHomeUplink);
   $("checkins-home-dismiss-btn")?.addEventListener("click", () => resetHomeSupport(true));

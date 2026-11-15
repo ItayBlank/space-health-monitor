@@ -34,11 +34,11 @@ The Windows artifact includes the English Vosk model beside `HAL2030.exe` in
 it is detected automatically, regardless of the working directory. No extra setup
 or internet connection is needed. Click **Enable microphone** to start listening.
 
-For source runs, install normal requirements (which include
+For source runs, install desktop requirements (which include
 `requirements-voice.txt`), then download the English Vosk model once:
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-desktop.txt
 .\.venv\Scripts\python.exe tools/download_voice_model.py
 ```
 

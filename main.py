@@ -43,7 +43,7 @@ def main():
         from hal2030.ui.theme import apply_theme
         from hal2030.ui.window import MainWindow
     except ImportError as error:
-        print(f"A dependency is missing: {error}\nInstall with: python -m pip install -r requirements.txt", file=sys.stderr)
+        print(f"A dependency is missing: {error}\nInstall with: python -m pip install -r requirements-desktop.txt", file=sys.stderr)
         return 1
     app = QApplication(sys.argv[:1])
     app.setApplicationName("HAL2030")
